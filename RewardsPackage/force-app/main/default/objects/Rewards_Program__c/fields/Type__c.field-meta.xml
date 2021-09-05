@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Type__c</fullName>
+    <description>Indicates whether this Rewards Program has a start and end date or if it is perpetually available</description>
+    <externalId>false</externalId>
+    <inlineHelpText>Indicates whether this Rewards Program has a start and end date or if it is perpetually available</inlineHelpText>
+    <label>Type</label>
+    <required>true</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Picklist</type>
+    <valueSet>
+        <restricted>true</restricted>
+        <valueSetDefinition>
+            <sorted>false</sorted>
+            <value>
+                <fullName>Limited Duration</fullName>
+                <default>false</default>
+                <label>Limited Duration</label>
+            </value>
+            <value>
+                <fullName>Perpetual</fullName>
+                <default>false</default>
+                <label>Perpetual</label>
+            </value>
+        </valueSetDefinition>
+    </valueSet>
+</CustomField>
