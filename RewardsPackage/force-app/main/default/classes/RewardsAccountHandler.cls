@@ -13,7 +13,7 @@ public with sharing class RewardsAccountHandler {
             if (mapRewardsPrograms.get(ra.Rewards_Program__c) != null) {
                 strName += mapRewardsPrograms.get(ra.Rewards_Program__c).Name;
             }
-            strName += ' Account';
+            strName += ' Rewards';
             ra.Name = strName;
         }
 

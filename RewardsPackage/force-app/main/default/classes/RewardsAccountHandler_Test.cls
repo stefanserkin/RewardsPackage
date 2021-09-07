@@ -3,13 +3,16 @@ public with sharing class RewardsAccountHandler_Test {
 
     @TestSetup
     static void setupTestData(){
+        Id perpetualRecordTypeId = Schema.SObjectType.Rewards_Program__c.getRecordTypeInfosByDeveloperName().get('Perpetual').getRecordTypeId();
+        Id limitedRecordTypeId   = Schema.SObjectType.Rewards_Program__c.getRecordTypeInfosByDeveloperName().get('Limited_Duration').getRecordTypeId();
+
         Account acc = new Account(Name='Test Household');
         insert acc;
 
         Contact ct = new Contact(FirstName='Testing', LastName='Test', Email='testingrewards@test.com', AccountId=acc.Id);
         insert ct;
 
-        Rewards_Program__c rp = new Rewards_Program__c(Name='Evergreen Testing', Type__c='Perpetual', Status__c='Active');
+        Rewards_Program__c rp = new Rewards_Program__c(Name='Evergreen Testing', Status__c='Active', RecordTypeId=perpetualRecordTypeId);
         insert rp;
     }
 
@@ -31,7 +34,7 @@ public with sharing class RewardsAccountHandler_Test {
 
         Rewards_Account__c raToVerify = [SELECT Id, Name FROM Rewards_Account__c WHERE Id = :ra.Id LIMIT 1];
 
-        String strExpectedName = ct.FirstName + '\'s ' + rp.Name + ' Account';
+        String strExpectedName = ct.FirstName + '\'s ' + rp.Name + ' Rewards';
         System.assertEquals(strExpectedName, raToVerify.Name, 'Unexpected rewards account name');
     }
 

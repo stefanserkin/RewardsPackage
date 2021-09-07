@@ -23,6 +23,21 @@
                 <default>false</default>
                 <label>Fulfilled</label>
             </value>
+            <value>
+                <fullName>Active</fullName>
+                <default>false</default>
+                <label>Active</label>
+            </value>
+            <value>
+                <fullName>Expired</fullName>
+                <default>false</default>
+                <label>Expired</label>
+            </value>
+            <value>
+                <fullName>Canceled</fullName>
+                <default>false</default>
+                <label>Canceled</label>
+            </value>
         </valueSetDefinition>
     </valueSet>
 </CustomField>

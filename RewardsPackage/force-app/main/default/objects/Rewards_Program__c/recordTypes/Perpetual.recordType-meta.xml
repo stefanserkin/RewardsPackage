@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <RecordType xmlns="http://soap.sforce.com/2006/04/metadata">
-    <fullName>Award</fullName>
+    <fullName>Perpetual</fullName>
     <active>true</active>
-    <description>Points awarded</description>
-    <label>Award</label>
+    <description>A Rewards Program without a start and end date</description>
+    <label>Perpetual</label>
     <picklistValues>
         <picklist>Status__c</picklist>
         <values>
@@ -11,15 +11,11 @@
             <default>false</default>
         </values>
         <values>
-            <fullName>Expired</fullName>
+            <fullName>Complete</fullName>
             <default>false</default>
         </values>
         <values>
-            <fullName>Fulfilled</fullName>
-            <default>false</default>
-        </values>
-        <values>
-            <fullName>Pending</fullName>
+            <fullName>Draft</fullName>
             <default>false</default>
         </values>
     </picklistValues>
