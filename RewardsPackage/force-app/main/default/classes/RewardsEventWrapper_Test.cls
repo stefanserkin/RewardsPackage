@@ -1,9 +1,9 @@
 @isTest
-public with sharing class RewardsEventHandler_Test {
+public class RewardsEventWrapper_Test {
 
     @isTest
     static void unitTest1() {
         
     }
-    
+
 }

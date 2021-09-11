@@ -1,0 +1,57 @@
+<!-- sldsValidatorIgnore -->
+<template>
+    <div class="spinner">
+        <template if:true={isLoading}>
+             <lightning-spinner alternative-text="Loading" variant="brand" size="large">
+             </lightning-spinner>
+        </template>
+    </div>
+    <lightning-card title={cardTitle}>
+        <template if:false={isRecalculated}>
+            <lightning-button 
+                variant="brand-outline" 
+                label="Recalculate" 
+                title="Recalculate" 
+                onclick={handleButtonClick} 
+                class="slds-var-m-left_x-small"
+            >
+            </lightning-button>
+        </template>
+
+        <template if:true={isModalOpen}>
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <!-- Modal Header -->
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick={closeModal}>
+                            <lightning-icon icon-name="utility:close"
+                                alternative-text="close"
+                                variant="inverse"
+                                size="small" >
+                            </lightning-icon>
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">Recalculate Rewards Account</h2>
+                    </header>
+                    <!-- Modal Body -->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <p>Continuing will recalculate all Rewards Event balances based on the date they were earned and the Points Total for this Rewards Account. Are you sure you would like to proceed?</p>
+                    </div>
+                    <!-- Modal Footer -->
+                    <footer class="slds-modal__footer">
+                        <button class="slds-button slds-button_neutral" onclick={closeModal} title="Cancel">Cancel</button>
+                        <button class="slds-button slds-button_brand" onclick={handleRecalculate} title="Confirm Recalculate">Recalculate</button>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+
+        <template if:true={isRecalculated}>
+            <p if:true={isLoading}>Updating records...</p>
+            <p if:false={isLoading}>This Rewards Account has been recalculated successfully. Please refresh the page.</p>
+        </template>
+
+    </lightning-card>
+    
+</template>

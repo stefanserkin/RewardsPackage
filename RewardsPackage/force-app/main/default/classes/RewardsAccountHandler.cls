@@ -6,17 +6,27 @@ public with sharing class RewardsAccountHandler {
 
         for (Rewards_Account__c ra : lstRAsInTrigger) {
             String strName = '';
-            if (mapContacts.get(ra.Contact__c) != null) {
-                strName += mapContacts.get(ra.Contact__c).FirstName;
-            }
+            strName += mapContacts.get(ra.Contact__c)?.FirstName;
             strName += '\'s ';
-            if (mapRewardsPrograms.get(ra.Rewards_Program__c) != null) {
-                strName += mapRewardsPrograms.get(ra.Rewards_Program__c).Name;
+            strName += mapRewardsPrograms.get(ra.Rewards_Program__c)?.Name;
+            if (mapRewardsPrograms.get(ra.Rewards_Program__c)?.Name?.right(7) == 'Rewards') {
+                strName += ' Account';
+            } else {
+                strName += ' Rewards';
             }
-            strName += ' Rewards';
             ra.Name = strName;
         }
 
+    }
+
+    public static Rewards_Account__c getRewardsAccount(String contactId, String rewardsProgramId) {
+        return [SELECT Id, Points_Total__c, Rewards_Program__c, Rewards_Program__r.Name, Rewards_Program__r.Days_Until_Points_Expire__c
+                  FROM Rewards_Account__c 
+                 WHERE Contact__c = :contactId 
+                   AND Rewards_Program__c = :rewardsProgramId
+                   AND Status__c IN ('Pending','Active') 
+                  WITH SECURITY_ENFORCED
+                 LIMIT 1];
     }
 
     private static Map<Id, Contact> getContactMap(List<Rewards_Account__c> lstRAs) {
@@ -48,4 +58,5 @@ public with sharing class RewardsAccountHandler {
         ]);
         return mapRewardsPrograms;
     }
+
 }
