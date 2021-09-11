@@ -3,8 +3,6 @@ public with sharing class RewardsAccountController {
     @AuraEnabled
     public static void recalculateRewardsAccount(String recordId) {
 
-        System.debug(':::: entered recalculateRewardsAccount with record id: ' + recordId);
-
         Rewards_Account__c rewardsAccountWithRewardsEvents = [
             SELECT Id, 
                    Points_Total__c, 
