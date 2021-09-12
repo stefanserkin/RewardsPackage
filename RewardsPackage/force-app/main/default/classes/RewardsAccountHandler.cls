@@ -78,7 +78,7 @@ public with sharing class RewardsAccountHandler {
                    Rewards_Program__c, Rewards_Program__r.Name, Rewards_Program__r.End_Datetime__c, 
                    Rewards_Program__r.Days_Until_Points_Expire__c,
                    (SELECT Id, Points__c, Expiration_Date__c, Date__c, Points_Remaining__c, Points_Used__c,
-                           Status__c, RecordTypeId, Active__c 
+                           Status__c, RecordTypeId
                       FROM Rewards_Events__r
                      WHERE RecordTypeId = :awardRecordTypeId
                        AND Points_Remaining__c > 0

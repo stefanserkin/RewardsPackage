@@ -11,7 +11,6 @@ public with sharing class RewardsEventLinkHandler {
             award.Points_Used__c += rel.Points_Used__c;
             if (award.Points_Used__c == award.Points__c) {
                 award.Status__c = 'Used';
-                award.Active__c = false;
             }
         }
         try {
@@ -28,7 +27,7 @@ public with sharing class RewardsEventLinkHandler {
         }
         return new Map<Id, Rewards_Event__c>([
             SELECT Id, Points__c, Points_Remaining__c, Points_Used__c,
-                   Status__c, RecordTypeId, Active__c 
+                   Status__c, RecordTypeId
               FROM Rewards_Event__c
              WHERE Id IN :setRewardsEventsIds
         ]);

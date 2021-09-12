@@ -245,7 +245,6 @@ public with sharing class RewardsEventHandler {
             re.Expiration_Date__c = expirationDate;
         }
         re.Date__c                 = Datetime.now();
-        re.Active__c               = true;
         re.Status__c               = 'Active';
 
         // Insert rewards event
