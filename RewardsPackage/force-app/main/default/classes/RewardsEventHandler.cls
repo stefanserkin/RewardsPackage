@@ -42,6 +42,10 @@ public with sharing class RewardsEventHandler {
                 if (re.Type__c == 'Award') {
                     runningBalance += re.Points__c;
                     re.Points_Balance__c = runningBalance;
+                    // set description if blank
+                    if (String.isEmpty(re.Description__c)) {
+                        setBlankAwardDescription(re, mapRewardsAccounts);
+                    }
                 } else if (re.Type__c == 'Redemption' || re.Type__c == 'Expiration') {
                     runningBalance -= re.Points__c;
                     re.Points_Balance__c = runningBalance;
@@ -98,6 +102,14 @@ public with sharing class RewardsEventHandler {
         handleExpirations(mapExpirationEventsInTrigger);
     }
 
+    private static void setBlankAwardDescription(
+        Rewards_Event__c re, 
+        Map<Id, Rewards_Account__c> mapRewardsAccounts
+    ) {
+        re.Rewards_Program_ID__c = mapRewardsAccounts.get(re.Rewards_Account__c)?.Rewards_Program__r?.Id;
+        re.Rewards_Program_ID__c = mapRewardsAccounts.get(re.Rewards_Account__c)?.Rewards_Program__c;
+    }
+
     private static void setBlankRedemptionDescriptions(List<Rewards_Event__c> lstRewardsEvents) {
         Set<Id> setRewardIds = new Set<Id>();
         for (Rewards_Event__c re : lstRewardsEvents) {
@@ -127,6 +139,7 @@ public with sharing class RewardsEventHandler {
 
             for (Rewards_Event__c awRe : lstAwards) {
                 Rewards_Event_Link__c rel = new Rewards_Event_Link__c();
+                rel.Type__c            = 'Redemption';
                 rel.Deduction_Event__c = reRe.Id;
                 rel.Award_Event__c     = awRe.Id;
 
