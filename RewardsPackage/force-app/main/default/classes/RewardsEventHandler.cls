@@ -42,9 +42,19 @@ public with sharing class RewardsEventHandler {
                 if (re.Type__c == 'Award') {
                     runningBalance += re.Points__c;
                     re.Points_Balance__c = runningBalance;
-                    // set description if blank
-                    if (String.isEmpty(re.Description__c)) {
-                        setBlankAwardDescription(re, mapRewardsAccounts);
+                    // set program values and description if blank
+                    setBlankAwardValues(re, mapRewardsAccounts);
+                    // If any expiration criteria apply, get earliest expiration date
+                    if (
+                        ra.Rewards_Program__r.Days_Until_Points_Expire__c != null || 
+                        ra.Rewards_Program__r.End_Datetime__c != null
+                    ) {
+                        Decimal daysToExpiration;
+                        if (re.Expiration_Date__c != null) {
+                            daysToExpiration = Date.today().daysBetween(re.Expiration_Date__c);
+                        }
+                        System.debug(':::::::: daysToExpiration evaluated : ' + daysToExpiration); 
+                        re.Expiration_Date__c = getExpirationDateForRewardsEvent(ra, daysToExpiration);
                     }
                 } else if (re.Type__c == 'Redemption' || re.Type__c == 'Expiration') {
                     runningBalance -= re.Points__c;
@@ -55,11 +65,7 @@ public with sharing class RewardsEventHandler {
             lstRewardsAccsToUpdate.add(ra);
         }
 
-        try {
-            update lstRewardsAccsToUpdate;
-        } catch (DmlException e) {
-            System.debug(':::: Failed to update Rewards Accounts: ' + e.getMessage());
-        }
+        update lstRewardsAccsToUpdate;
 
     }
 
@@ -69,9 +75,7 @@ public with sharing class RewardsEventHandler {
             mapRewardsAccounts = RewardsAccountHandler.getRewardsAccountMap(lstRewardsEventsInTrigger);
             rewardsAccountMapIsSet = true;
         }
-        if (!recordTypeIdsAreSet) {
-            setRecordTypeIds();
-        }
+        setRecordTypeIds();
 
         if (isBefore) {
             List<Rewards_Event__c> lstEventsMissingDescriptions = new List<Rewards_Event__c>();
@@ -79,7 +83,7 @@ public with sharing class RewardsEventHandler {
                 if (re.RecordTypeId == redemptionRecordTypeId && mapRewardsAccounts.get(re.Rewards_Account__c).Points_Total__c < re.Points__c) {
                     re.addError('Not enough points to redeem reward.');
                 }
-                if (String.isBlank(re.Description__c)) {
+                if (String.isBlank(re.Description__c) && re.RecordTypeId == redemptionRecordTypeId) {
                     lstEventsMissingDescriptions.add(re);
                 }
             }
@@ -102,12 +106,29 @@ public with sharing class RewardsEventHandler {
         handleExpirations(mapExpirationEventsInTrigger);
     }
 
-    private static void setBlankAwardDescription(
+    private static void setBlankAwardValues(
         Rewards_Event__c re, 
         Map<Id, Rewards_Account__c> mapRewardsAccounts
     ) {
-        re.Rewards_Program_ID__c = mapRewardsAccounts.get(re.Rewards_Account__c)?.Rewards_Program__r?.Id;
-        re.Rewards_Program_ID__c = mapRewardsAccounts.get(re.Rewards_Account__c)?.Rewards_Program__c;
+        String programName   = re.Rewards_Program_Name__c = mapRewardsAccounts.get(re.Rewards_Account__c)?.Rewards_Program__r?.Name;
+        String accountStatus = mapRewardsAccounts.get(re.Rewards_Account__c)?.Status__c;
+        if (String.isEmpty(re.Rewards_Program_Name__c)) {
+            re.Rewards_Program_Name__c = programName;
+        }
+        if (String.isEmpty(re.Rewards_Program_ID__c)) {
+            re.Rewards_Program_Name__c = mapRewardsAccounts.get(re.Rewards_Account__c)?.Rewards_Program__c;
+        }
+        if (String.isEmpty(re.Description__c)) {
+            re.Description__c = programName + ' Points';
+        }
+        if (String.isEmpty(re.Status__c) && (accountStatus == 'Active' || accountStatus == 'Pending')) {
+            re.Status__c = accountStatus;
+        } else {
+            re.Status__c = 'Inactive';
+        }
+        if (re.Date__c == null) {
+            re.Date__c = Datetime.now();
+        }
     }
 
     private static void setBlankRedemptionDescriptions(List<Rewards_Event__c> lstRewardsEvents) {
@@ -158,11 +179,7 @@ public with sharing class RewardsEventHandler {
                 }
             }
         }
-        try {
-            insert lstRelsToInsert;
-        } catch (DmlException e) {
-            System.debug(':::: Failed to insert rewards event links: ' + e.getMessage());
-        }
+        insert lstRelsToInsert;
         
     }
 
@@ -184,7 +201,8 @@ public with sharing class RewardsEventHandler {
     }
 
     private static void setRecordTypeIds() {
-        awardRecordTypeId = Schema.SObjectType.Rewards_Event__c.getRecordTypeInfosByDeveloperName().get('Award').getRecordTypeId();
+        if (recordTypeIdsAreSet) return;
+        awardRecordTypeId      = Schema.SObjectType.Rewards_Event__c.getRecordTypeInfosByDeveloperName().get('Award').getRecordTypeId();
         redemptionRecordTypeId = Schema.SObjectType.Rewards_Event__c.getRecordTypeInfosByDeveloperName().get('Redemption').getRecordTypeId();
         expirationRecordTypeId = Schema.SObjectType.Rewards_Event__c.getRecordTypeInfosByDeveloperName().get('Expiration').getRecordTypeId();
         recordTypeIdsAreSet = true;
@@ -195,28 +213,27 @@ public with sharing class RewardsEventHandler {
         Decimal reDaysUntilExpiration
     ) {
         List<Date> lstDates = new List<Date>();
-        Date rewardsEventExpiration;
-        Date rewardsProgramExpiration;
-        Date rewardsProgramEndDate;
         // Get expiration based on number of days until rewards event expires
-        if (reDaysUntilExpiration != null && reDaysUntilExpiration > 0) {
-            rewardsEventExpiration = Date.today().addDays( reDaysUntilExpiration.intValue() );
+        if (reDaysUntilExpiration != null && reDaysUntilExpiration != 0) {
+            Date rewardsEventExpiration = Date.today().addDays( reDaysUntilExpiration.intValue() );
             lstDates.add(rewardsEventExpiration);
         } 
         // Get expiration based on number of days until rewards program points expire
         if (rewardsAccount.Rewards_Program__r.Days_Until_Points_Expire__c != null) {
             Decimal pDaysUntilExpiration = rewardsAccount.Rewards_Program__r.Days_Until_Points_Expire__c;
-            rewardsProgramExpiration = Date.today().addDays( pDaysUntilExpiration.intValue() );
+            Date rewardsProgramExpiration = Date.today().addDays( pDaysUntilExpiration.intValue() );
             lstDates.add(rewardsProgramExpiration);
         }
         // Get expiration based on final day of program
         if (rewardsAccount.Rewards_Program__r.End_Datetime__c != null) {
             Datetime rpEndDatetime = rewardsAccount.Rewards_Program__r.End_Datetime__c;
-            rewardsProgramEndDate = Date.newInstance(rpEndDatetime.year(), rpEndDatetime.month(), rpEndDatetime.day());
+            Date rewardsProgramEndDate = Date.newInstance(rpEndDatetime.year(), rpEndDatetime.month(), rpEndDatetime.day());
             lstDates.add(rewardsProgramEndDate);
         }
+        System.debug(':::::::: list of dates before sort: ' + lstDates); 
         // Return earliest date
         lstDates.sort();
+        System.debug(':::::::: list of dates after sort: ' + lstDates); 
         return lstDates[0];
     }
 
@@ -227,9 +244,7 @@ public with sharing class RewardsEventHandler {
         Boolean insertIsSuccess;
         Date expirationDate;
 
-        if (!recordTypeIdsAreSet) {
-            setRecordTypeIds();
-        }
+        setRecordTypeIds();
 
         Rewards_Account__c rewardsAccount = RewardsAccountHandler.getRewardsAccount(contactId, rewardsProgramId);
 
@@ -260,7 +275,7 @@ public with sharing class RewardsEventHandler {
         re.Date__c                 = Datetime.now();
         re.Status__c               = 'Active';
 
-        // Insert rewards event
+        // Insert rewards event and report result back to lightning process that invoked it
         try {
             insert re;
             insertIsSuccess = true;

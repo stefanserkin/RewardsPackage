@@ -25,11 +25,9 @@ public with sharing class RewardsEventLinkHandler {
             }
             mapRewardsEventsToUpdate.put(award.Id, award);
         }
-        try {
-            update mapRewardsEventsToUpdate.values();
-        } catch (DmlException e) {
-            System.debug(':::: Failed to update Rewards Events: ' + e.getMessage());
-        }
+        
+        update mapRewardsEventsToUpdate.values();
+
     }
 
     private static Map<Id, Rewards_Event__c> getRewardsEventsToUpdateMap(List<Rewards_Event_Link__c> lstRelsInTrigger) {

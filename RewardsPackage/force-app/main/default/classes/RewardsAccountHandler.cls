@@ -62,11 +62,11 @@ public with sharing class RewardsAccountHandler {
                    Rewards_Program__c, Rewards_Program__r.Name, Rewards_Program__r.End_Datetime__c, 
                    Rewards_Program__r.Days_Until_Points_Expire__c,
                    (SELECT Id, Points__c, Expiration_Date__c, Date__c, Points_Remaining__c, Points_Used__c,
-                           Status__c, RecordTypeId
+                           Status__c, RecordTypeId, Points_Expired__c, Expired__c
                       FROM Rewards_Events__r
                      WHERE RecordTypeId = :awardRecordTypeId
                        AND Points_Remaining__c > 0
-                     ORDER BY Expiration_Date__c ASC NULLS LAST, Date__c asc)
+                     ORDER BY Expiration_Date__c ASC NULLS LAST, Date__c ASC, Points_Remaining__c ASC)
               FROM Rewards_Account__c 
              WHERE Id IN :setRewardsAccountIds
                AND Status__c IN ('Pending','Active') 
@@ -115,10 +115,9 @@ public with sharing class RewardsAccountHandler {
         Map<Id, Rewards_Account__c> mapRewardsAccounts = new Map<Id, Rewards_Account__c>([
             SELECT Id, Points_Total__c, Contact__c, Contact__r.FirstName, Contact__r.LastName, 
                    Rewards_Program__c, Rewards_Program__r.Name, Rewards_Program__r.End_Datetime__c, 
-                   Rewards_Program__r.Days_Until_Points_Expire__c
+                   Rewards_Program__r.Days_Until_Points_Expire__c, Status__c 
               FROM Rewards_Account__c 
              WHERE Id IN :setRewardsAccountIds
-               AND Status__c IN ('Pending','Active') 
               WITH SECURITY_ENFORCED
              LIMIT 10000
         ]);

@@ -1,6 +1,6 @@
 public without sharing class RewardsExpirationScheduler implements Schedulable {
 
-    public static String schedule = '0 13 21 ? * *'; // Every day at 9:13pm
+    public static String schedule = '0 2 7 ? * *'; // Every day at 2:07am
 
     public static String run() {
         RewardsExpirationScheduler res = new RewardsExpirationScheduler(); 
@@ -9,7 +9,7 @@ public without sharing class RewardsExpirationScheduler implements Schedulable {
 
     public void execute(SchedulableContext context) {
         RewardsExpirationBatchUpdater rebu = new RewardsExpirationBatchUpdater();
-        Id batchProcessId = Database.executeBatch(rebu, 10);
+        Id batchProcessId = Database.executeBatch(rebu, 50);
     }
 
 }

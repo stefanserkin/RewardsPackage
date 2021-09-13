@@ -35,17 +35,8 @@ public with sharing class RewardsAccountController {
 
         rewardsAccountWithRewardsEvents.Points_Total__c = runningBalance;
 
-        try {
-            update rewardsAccountWithRewardsEvents;
-        } catch (DmlException e) {
-            System.debug(':::: Unable to update Rewards Account: ' + e.getMessage());
-        }
-
-        try {
-            update lstRewardsEventsToUpdate;
-        } catch (DmlException e) {
-            System.debug(':::: Unable to update Rewards Events: ' + e.getMessage());
-        }
+        update rewardsAccountWithRewardsEvents;
+        update lstRewardsEventsToUpdate;
 
     }
     

@@ -17,7 +17,6 @@ public without sharing class RewardsExpirationBatchUpdater implements Database.B
     }
 
     public void execute(Database.BatchableContext bc, List<Rewards_Account__c> scope) {
-        System.debug(':::: Entered batch execution');
         Id expRecTypeId = Schema.SObjectType.Rewards_Event__c.getRecordTypeInfosByDeveloperName()
                             .get('Expiration').getRecordTypeId();
 
@@ -72,12 +71,21 @@ public without sharing class RewardsExpirationBatchUpdater implements Database.B
                 );
             }
         }
-        System.debug(':::: Number of RELs to be inserted: ' + lstRELsToInsert.size());
         insert lstRELsToInsert;
-
-    }  
+    }
 
     public void finish(Database.BatchableContext bc) {
+        AsyncApexJob apexJob = [SELECT Id, Status, NumberOfErrors, JobItemsProcessed, TotalJobItems, CreatedBy.Email
+                                FROM AsyncApexJob WHERE Id =: bc.getJobId()];
+        
+        // Send email to job creator with batch results
+        Messaging.SingleEmailMessage email = new Messaging.SingleEmailMessage();
+        String[] toAddress = new String[] {apexJob.CreatedBy.Email};
+        system.debug('apexJob.CreatedBy.Email : '+apexJob.CreatedBy.Email);
+        email.setToAddresses(toAddress);
+        email.setSubject('Apex Job status is ' + apexJob.Status);
+        email.setPlainTextBody('The batch Apex job processed ' + apexJob.TotalJobItems + ' batches with '+ apexJob.NumberOfErrors + ' failures.');
+        Messaging.sendEmail(new Messaging.SingleEmailMessage[] { email });
     }
 
 }
