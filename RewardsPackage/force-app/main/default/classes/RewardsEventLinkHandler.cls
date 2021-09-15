@@ -1,17 +1,20 @@
 public with sharing class RewardsEventLinkHandler {
 
     // Receives records from handleRedemptions in RewardsEventHandler
-    public static Map<Id, Rewards_Event__c> mapRewardsEventsToUpdate = new Map<Id, Rewards_Event__c>();
+    public static Map<Id, Rewards_Event__c> mapRewardsEventsToUpdate;
+    public static Map<Id, Rewards_Event_Link__c> mapRewardsEventLinksToUpdate;
 
     public static void debitAwards(List<Rewards_Event_Link__c> lstRelsInTrigger) {
-        if (mapRewardsEventsToUpdate.isEmpty()) {
-            mapRewardsEventsToUpdate = getRewardsEventsToUpdateMap(lstRelsInTrigger);
-        }
-        System.debug('Size of rewards events when creating links : ' + mapRewardsEventsToUpdate.size());
+        Map<Id, Rewards_Event__c> mapAwardsToUpdate = getRewardsEventsToUpdateMap(lstRelsInTrigger);
+
         for (Rewards_Event_Link__c rel : lstRelsInTrigger) {
-            Rewards_Event__c award = mapRewardsEventsToUpdate.get(rel.Award_Event__c);
-            if (award.Points_Used__c == null) award.Points_Used__c = 0;
-            if (award.Points_Expired__c == null) award.Points_Expired__c = 0;
+            Rewards_Event__c award = mapAwardsToUpdate.get(rel.Award_Event__c);
+            if (award.Points_Used__c == null) {
+                award.Points_Used__c = 0;
+            }
+            if (award.Points_Expired__c == null) {
+                award.Points_Expired__c = 0;
+            }
             if (rel.Type__c == 'Redemption') {
                 award.Points_Used__c += rel.Points_Used__c;
                 if (award.Points_Used__c + award.Points_Expired__c == award.Points__c) {
@@ -23,14 +26,41 @@ public with sharing class RewardsEventLinkHandler {
                 award.Status__c  = 'Empty';
                 award.Expired__c = true;
             }
-            mapRewardsEventsToUpdate.put(award.Id, award);
+            RewardsEventHandler.addToMapToUpdate(award);
         }
-        
-        update mapRewardsEventsToUpdate.values();
+
+        RewardsEventHandler.updateRewardsEventsDml();
 
     }
 
-    private static Map<Id, Rewards_Event__c> getRewardsEventsToUpdateMap(List<Rewards_Event_Link__c> lstRelsInTrigger) {
+    public static Rewards_Event_Link__c createRewardsEventLink(
+        String type, Id deductionEvent, Id awardEvent, Decimal points
+    ) {
+        return new Rewards_Event_Link__c(
+            Type__c = type, 
+            Deduction_Event__c = deductionEvent, 
+            Award_Event__c = awardEvent, 
+            Points_Used__c = points
+        );
+    }
+
+    public static void addToMapToUpdate(Rewards_Event_Link__c rel) {
+        if (mapRewardsEventsToUpdate == null) {
+            mapRewardsEventsToUpdate = new Map<Id, Rewards_Event__c>();
+        }
+        mapRewardsEventLinksToUpdate.put(rel.Id, rel);
+    }
+
+    public static void addToMapToUpdate(List<Rewards_Event_Link__c> lstRELs) {
+        if (mapRewardsEventsToUpdate == null) {
+            mapRewardsEventsToUpdate = new Map<Id, Rewards_Event__c>();
+        }
+        mapRewardsEventLinksToUpdate.putAll(lstRELs);
+    }
+
+    private static Map<Id, Rewards_Event__c> getRewardsEventsToUpdateMap(
+        List<Rewards_Event_Link__c> lstRelsInTrigger
+    ) {
         Set<Id> setRewardsEventsIds = new Set<Id>();
         for (Rewards_Event_Link__c rel : lstRelsInTrigger) {
             setRewardsEventsIds.add(rel.Award_Event__c);
@@ -40,7 +70,8 @@ public with sharing class RewardsEventLinkHandler {
                    Points_Expired__c, Status__c, RecordTypeId, Expired__c
               FROM Rewards_Event__c
              WHERE Id IN :setRewardsEventsIds
+               AND Status__c != 'Canceled'
         ]);
     }
-    
+
 }

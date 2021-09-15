@@ -76,14 +76,14 @@ public without sharing class RewardsExpirationBatchUpdater implements Database.B
 
     public void finish(Database.BatchableContext bc) {
         AsyncApexJob apexJob = [SELECT Id, Status, NumberOfErrors, JobItemsProcessed, TotalJobItems, CreatedBy.Email
-                                FROM AsyncApexJob WHERE Id =: bc.getJobId()];
+                                FROM AsyncApexJob WHERE Id = :bc.getJobId()];
         
         // Send email to job creator with batch results
         Messaging.SingleEmailMessage email = new Messaging.SingleEmailMessage();
         String[] toAddress = new String[] {apexJob.CreatedBy.Email};
         system.debug('apexJob.CreatedBy.Email : '+apexJob.CreatedBy.Email);
         email.setToAddresses(toAddress);
-        email.setSubject('Apex Job status is ' + apexJob.Status);
+        email.setSubject(apexJob.Status + ': Rewards Expiration Batch Updater');
         email.setPlainTextBody('The batch Apex job processed ' + apexJob.TotalJobItems + ' batches with '+ apexJob.NumberOfErrors + ' failures.');
         Messaging.sendEmail(new Messaging.SingleEmailMessage[] { email });
     }

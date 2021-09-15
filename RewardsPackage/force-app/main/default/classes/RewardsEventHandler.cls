@@ -1,190 +1,260 @@
 public with sharing class RewardsEventHandler {
 
+    private static Boolean recordTypeIdsAreSet = false;
     private static Id awardRecordTypeId;
     private static Id redemptionRecordTypeId;
     private static Id expirationRecordTypeId;
-    private static Boolean recordTypeIdsAreSet = false;
-    private static Map<Id, Rewards_Account__c> mapRewardsAccounts;
-    private static Boolean rewardsAccountMapIsSet = false;
+    private static Map<Id, Rewards_Account__c> mapRewardsAccountsToUpdate;
+    private static Map<Id, Rewards_Event__c> mapRewardsEventsToUpdate;
 
-    public static void setRunningBalance(List<Rewards_Event__c> lstRewardsEventsInTrigger) {
-        // Map Rewards Accounts to their list of Rewards Events
-        Map<Rewards_Account__c, List<Rewards_Event__c>> mapRewardsAccsToSortedEvents = 
-            new Map<Rewards_Account__c, List<Rewards_Event__c>>();
-        List<Rewards_Account__c> lstRewardsAccsToUpdate = new List<Rewards_Account__c>();
-        
-        // Get list of Rewards Events sorted by date
-        List<Rewards_Event__c> lstSortedRewardsEvents = sortRewardsEventsByDate(lstRewardsEventsInTrigger);
-        Map<Id, Rewards_Account__c> mapRewardsAccounts = RewardsAccountHandler.getRewardsAccountMap(lstRewardsEventsInTrigger);
-
-        // Populate map for each Rewards Account in trigger context
-        for (Rewards_Account__c ra : mapRewardsAccounts.values()) {
-            List<Rewards_Event__c> lstRAsRewardsEvents = new List<Rewards_Event__c>();
-            for (Rewards_Event__c re : lstSortedRewardsEvents) {
-                if (re.Rewards_Account__c == ra.Id) {
-                    lstRAsRewardsEvents.add(re);
-                }
-            }
-            mapRewardsAccsToSortedEvents.put(ra, lstRAsRewardsEvents);
-        }
-
-        for (Rewards_Account__c ra : mapRewardsAccsToSortedEvents.keySet()) {
-            // Set balance from beginning of transaction
-            Decimal runningBalance;
-            if (ra.Points_Total__c != null) {
-                runningBalance = ra.Points_Total__c;
+    public static void handleTriggerEvent(
+        Boolean isBefore, Boolean isInsert, Boolean isUpdate, Boolean isDelete, Boolean isUndelete,
+        List<Rewards_Event__c> lstREsInTrigger, Map<Id, Rewards_Event__c> mapNewREsInTrigger, 
+        Map<Id, Rewards_Event__c> mapOldREsInTrigger
+    ) {
+        if (isInsert) {
+            if (isBefore) {
+                processBeforeInsert(lstREsInTrigger);
             } else {
-                runningBalance = 0;
+                processAfterInsert(lstREsInTrigger);
             }
-
-            // Set balances for each of the related events
-            for (Rewards_Event__c re : mapRewardsAccsToSortedEvents.get(ra)) {
-                if (re.Type__c == 'Award') {
-                    runningBalance += re.Points__c;
-                    re.Points_Balance__c = runningBalance;
-                    // set program values and description if blank
-                    setBlankAwardValues(re, mapRewardsAccounts);
-                    // If any expiration criteria apply, get earliest expiration date
-                    if (
-                        ra.Rewards_Program__r.Days_Until_Points_Expire__c != null || 
-                        ra.Rewards_Program__r.End_Datetime__c != null
-                    ) {
-                        Decimal daysToExpiration;
-                        if (re.Expiration_Date__c != null) {
-                            daysToExpiration = Date.today().daysBetween(re.Expiration_Date__c);
-                        }
-                        System.debug(':::::::: daysToExpiration evaluated : ' + daysToExpiration); 
-                        re.Expiration_Date__c = getExpirationDateForRewardsEvent(ra, daysToExpiration);
-                    }
-                } else if (re.Type__c == 'Redemption' || re.Type__c == 'Expiration') {
-                    runningBalance -= re.Points__c;
-                    re.Points_Balance__c = runningBalance;
-                }
-            }
-            ra.Points_Total__c = runningBalance;
-            lstRewardsAccsToUpdate.add(ra);
         }
-
-        update lstRewardsAccsToUpdate;
-
     }
 
-    public static void handleDeductions(List<Rewards_Event__c> lstRewardsEventsInTrigger, Boolean isBefore) {
-        if (!rewardsAccountMapIsSet) {
-            mapRewardsAccounts = new Map<Id, Rewards_Account__c>();
-            mapRewardsAccounts = RewardsAccountHandler.getRewardsAccountMap(lstRewardsEventsInTrigger);
-            rewardsAccountMapIsSet = true;
-        }
+    private static void processBeforeInsert(List<Rewards_Event__c> lstREsInTrigger) {
         setRecordTypeIds();
+        Map<Id, Rewards_Account__c> mapRewardsAccountsWithEvents = RewardsAccountHandler.getRewardsAccountWithEventsMap(lstREsInTrigger);
+        Map<Id, Reward__c> mapRewards = RewardsHandler.getRewardsMap(lstREsInTrigger);
+        Map<Rewards_Account__c, List<Rewards_Event__c>> 
+            mapRewardsAccsToSortedEvents = getMapAccountsToEvents(lstREsInTrigger, mapRewardsAccountsWithEvents);
+        updateRecordsInTrigger(mapRewardsAccsToSortedEvents, mapRewardsAccountsWithEvents, mapRewards);
+        updateRewardsEventsDml();
+        updateRewardsAccountsDml();
+    }
 
-        if (isBefore) {
-            List<Rewards_Event__c> lstEventsMissingDescriptions = new List<Rewards_Event__c>();
-            for (Rewards_Event__c re : lstRewardsEventsInTrigger) {
-                if (re.RecordTypeId == redemptionRecordTypeId && mapRewardsAccounts.get(re.Rewards_Account__c).Points_Total__c < re.Points__c) {
-                    re.addError('Not enough points to redeem reward.');
-                }
-                if (String.isBlank(re.Description__c) && re.RecordTypeId == redemptionRecordTypeId) {
-                    lstEventsMissingDescriptions.add(re);
-                }
-            }
-            if (!lstEventsMissingDescriptions.isEmpty()) {
-                setBlankRedemptionDescriptions(lstEventsMissingDescriptions);
-            }
-            return;
-        }
-
+    private static void processAfterInsert(List<Rewards_Event__c> lstREsInTrigger) {
+        setRecordTypeIds();
+        Map<Id, Rewards_Account__c> mapRewardsAccountsWithEvents = RewardsAccountHandler.getRewardsAccountWithEventsMap(lstREsInTrigger);
         Map<Id, Rewards_Event__c> mapRedemptionEventsInTrigger = new Map<Id, Rewards_Event__c>();
         Map<Id, Rewards_Event__c> mapExpirationEventsInTrigger = new Map<Id, Rewards_Event__c>();
-        for (Rewards_Event__c re : lstRewardsEventsInTrigger) {
+        for (Rewards_Event__c re : lstREsInTrigger) {
             if (re.RecordTypeId == redemptionRecordTypeId) {
                 mapRedemptionEventsInTrigger.put(re.Id, re);
             } else if (re.RecordTypeId == expirationRecordTypeId) {
                 mapExpirationEventsInTrigger.put(re.Id, re);
             }
         }
-        handleRedemptions(mapRedemptionEventsInTrigger);
-        handleExpirations(mapExpirationEventsInTrigger);
+        handleRedemptions(mapRedemptionEventsInTrigger, mapRewardsAccountsWithEvents);
     }
 
-    private static void setBlankAwardValues(
-        Rewards_Event__c re, 
+    public static void updateRewardsEventsDml() {
+        if (mapRewardsEventsToUpdate != null && !mapRewardsEventsToUpdate.isEmpty()) {
+            update mapRewardsEventsToUpdate.values();
+        }
+    }
+
+    public static void updateRewardsAccountsDml() {
+        if (mapRewardsAccountsToUpdate != null && !mapRewardsAccountsToUpdate.isEmpty()) {
+            update mapRewardsAccountsToUpdate.values();
+        }
+    }
+
+    public static void addToMapToUpdate(Rewards_Event__c re) {
+        if (mapRewardsEventsToUpdate == null) {
+            mapRewardsEventsToUpdate = new Map<Id, Rewards_Event__c>();
+        }
+        mapRewardsEventsToUpdate.put(re.Id, re);
+    }
+
+    private static void handleRedemptions(
+        Map<Id, Rewards_Event__c> mapRedemptionEventsInTrigger, 
+        Map<Id, Rewards_Account__c> mapRewardsAccountsWithEvents
+    ) {
+        setRecordTypeIds();
+        List<Rewards_Event_Link__c> lstRelsToInsert = new List<Rewards_Event_Link__c>();
+        List<Rewards_Event__c> lstAwardsToUpdate    = new List<Rewards_Event__c>();
+
+        for (Rewards_Event__c redemption : mapRedemptionEventsInTrigger.values()) {
+            Decimal costOfReward  = redemption.Points__c;
+            Decimal costRemaining = costOfReward;
+            Boolean costIsCovered = false;
+
+            Rewards_Account__c ra = mapRewardsAccountsWithEvents.get(redemption.Rewards_Account__c);
+            List<Rewards_Event__c> lstAwards = new List<Rewards_Event__c>();
+            for (Rewards_Event__c award : ra.Rewards_Events__r) {
+                if (award.RecordTypeId != awardRecordTypeId || award.Points_Remaining__c <= 0) {
+                    continue;
+                }
+                Decimal points = costRemaining > award.Points_Remaining__c ? award.Points_Remaining__c : costRemaining;
+                Rewards_Event_Link__c rel = RewardsEventLinkHandler.createRewardsEventLink(
+                    'Redemption', redemption.Id, award.Id, points
+                );
+                costRemaining -= rel.Points_Used__c;
+                lstRelsToInsert.add(rel);
+                if (mapRewardsEventsToUpdate == null) {
+                    mapRewardsEventsToUpdate = new Map<Id, Rewards_Event__c>();
+                }
+                mapRewardsEventsToUpdate.put(award.Id, award);
+                if (costRemaining <= 0) {
+                    break;
+                }
+            }
+        }
+        if (!lstRelsToInsert.isEmpty()) {
+            insert lstRelsToInsert;
+        }
+    }
+
+    private static void updateRecordsInTrigger(
+        Map<Rewards_Account__c, List<Rewards_Event__c>> mapRewardsAccsToSortedEvents,
+        Map<Id, Rewards_Account__c> mapRewardsAccountsWithEvents,
+        Map<Id, Reward__c> mapRewards
+    ) {
+        for (Rewards_Account__c ra : mapRewardsAccsToSortedEvents.keySet()) {
+            
+            Decimal raStartingPointsTotal = ra.Points_Total__c != null ? ra.Points_Total__c : 0;
+            Decimal runningPointsTotal    = 0;
+            Integer debugCount = 0;
+            for (Rewards_Event__c re : mapRewardsAccsToSortedEvents.get(ra)) {
+                
+                setEmptyFields(re, mapRewardsAccountsWithEvents, mapRewards);
+                if (re.RecordTypeId == awardRecordTypeId) {
+                    re.Expiration_Date__c = getExpirationDateForRewardsEvent(ra, re.Expiration_Date__c);
+                }
+                if (re.RecordTypeId == redemptionRecordTypeId) {
+                    Boolean costIsCovered = verifyCostIsCovered(re, raStartingPointsTotal);
+                    if (!costIsCovered) {
+                        re.addError('Not enough points for reward.');
+                    }
+                }
+                if (re.Points__c != 0) {
+                    runningPointsTotal = addToPointsTotal(runningPointsTotal, re, mapRewardsAccountsWithEvents);
+                }
+                debugCount++;
+            }
+            // Only update accounts if total value has changed
+            if (runningPointsTotal != raStartingPointsTotal) {
+                if (mapRewardsAccountsToUpdate == null) {
+                    mapRewardsAccountsToUpdate = new Map<Id, Rewards_Account__c>();
+                }
+                ra.Points_Total__c = runningPointsTotal;
+                mapRewardsAccountsToUpdate.put(ra.Id, ra);
+            }
+        }
+    }
+
+    private static Boolean verifyCostIsCovered(
+        Rewards_Event__c re,
+        Decimal raStartingPointsTotal
+    ) {
+        return raStartingPointsTotal >= re.Points__c ? true : false;
+    }
+
+    private static Decimal addToPointsTotal(
+        Decimal pointsTotal, 
+        Rewards_Event__c re,
         Map<Id, Rewards_Account__c> mapRewardsAccounts
     ) {
-        String programName   = re.Rewards_Program_Name__c = mapRewardsAccounts.get(re.Rewards_Account__c)?.Rewards_Program__r?.Name;
+        setRecordTypeIds();
+
+        if (pointsTotal == null) {
+            pointsTotal = mapRewardsAccounts.get(re.Rewards_Account__c).Points_Total__c != null
+                            ? mapRewardsAccounts.get(re.Rewards_Account__c).Points_Total__c : 0;
+        }
+        Decimal oldBalance = re.Points_Balance__c != null ? re.Points_Balance__c : null;
+
+        if (re.RecordTypeId == awardRecordTypeId) {
+            pointsTotal += re.Points__c;
+            re.Points_Balance__c = pointsTotal;
+        } else if (re.RecordTypeId == redemptionRecordTypeId || re.RecordTypeId == expirationRecordTypeId) {
+            pointsTotal -= re.Points__c;
+            re.Points_Balance__c = pointsTotal;
+        }
+        // If balance has changed, add to map of rewards events to update
+        if (re.Id != null && re.Points_Balance__c != oldBalance) {
+            if (mapRewardsEventsToUpdate == null) {
+                mapRewardsEventsToUpdate = new Map<Id, Rewards_Event__c>();
+            }
+            mapRewardsEventsToUpdate.put(re.Id, re);
+        }
+
+        return pointsTotal;
+
+    }
+
+    private static void setEmptyFields(
+        Rewards_Event__c re,
+        Map<Id, Rewards_Account__c> mapRewardsAccounts, 
+        Map<Id, Reward__c> mapRewards
+    ) {
+        setRecordTypeIds();
+        if (re.RecordTypeId == awardRecordTypeId) {
+            setEmptyAwardFields(re, mapRewardsAccounts);
+        }
+        if (re.RecordTypeId == redemptionRecordTypeId) {
+            setEmptyRedemptionFields(re, mapRewardsAccounts, mapRewards);
+        }
+    }
+
+    private static void setEmptyAwardFields(
+        Rewards_Event__c re,
+        Map<Id, Rewards_Account__c> mapRewardsAccounts
+    ) {
+        String programName = mapRewardsAccounts.get(re.Rewards_Account__c)?.Rewards_Program__r?.Name;
         String accountStatus = mapRewardsAccounts.get(re.Rewards_Account__c)?.Status__c;
         if (String.isEmpty(re.Rewards_Program_Name__c)) {
             re.Rewards_Program_Name__c = programName;
         }
         if (String.isEmpty(re.Rewards_Program_ID__c)) {
-            re.Rewards_Program_Name__c = mapRewardsAccounts.get(re.Rewards_Account__c)?.Rewards_Program__c;
+            re.Rewards_Program_ID__c = mapRewardsAccounts.get(re.Rewards_Account__c)?.Rewards_Program__c;
         }
         if (String.isEmpty(re.Description__c)) {
             re.Description__c = programName + ' Points';
         }
-        if (String.isEmpty(re.Status__c) && (accountStatus == 'Active' || accountStatus == 'Pending')) {
-            re.Status__c = accountStatus;
-        } else {
-            re.Status__c = 'Inactive';
+        if (String.isEmpty(re.Status__c)) {
+            re.Status__c = accountStatus == 'Active' || accountStatus == 'Pending' ? 'Active' : 'Inactive';
         }
         if (re.Date__c == null) {
             re.Date__c = Datetime.now();
         }
     }
 
-    private static void setBlankRedemptionDescriptions(List<Rewards_Event__c> lstRewardsEvents) {
-        Set<Id> setRewardIds = new Set<Id>();
-        for (Rewards_Event__c re : lstRewardsEvents) {
-            setRewardIds.add(re.Reward__c);
+    private static void setEmptyRedemptionFields(
+        Rewards_Event__c re,
+        Map<Id, Rewards_Account__c> mapRewardsAccounts, 
+        Map<Id, Reward__c> mapRewards
+    ) {
+        String programName = mapRewardsAccounts.get(re.Rewards_Account__c)?.Rewards_Program__r?.Name;
+        if (String.isEmpty(re.Rewards_Program_Name__c)) {
+            re.Rewards_Program_Name__c = programName;
         }
-        Map<Id, Reward__c> mapRewards = new Map<Id, Reward__c>([SELECT Id, Name FROM Reward__c WHERE Id IN :setRewardIds]);
-        for (Rewards_Event__c re : lstRewardsEvents) {
-            re.Description__c = mapRewards.get(re.Reward__c).Name;
+        if (String.isEmpty(re.Rewards_Program_ID__c)) {
+            re.Rewards_Program_ID__c = mapRewardsAccounts.get(re.Rewards_Account__c)?.Rewards_Program__c;
+        }
+        if (String.isBlank(re.Description__c)) {
+            re.Description__c = mapRewards.get(re.Reward__c)?.Name;
         }
     }
 
-    private static void handleRedemptions(Map<Id, Rewards_Event__c> mapRedemptionEventsInTrigger) {
-        List<Rewards_Event_Link__c> lstRelsToInsert = new List<Rewards_Event_Link__c>();
-        List<Rewards_Event__c> lstAwardsToUpdate    = new List<Rewards_Event__c>();
-        // getActiveAwardsForRedemptions method returns a map of accounts 
-        // with sorted award events for a map of redemption events
-        Map<Id, Rewards_Account__c> mapRewardsAccountsWithAwards = 
-            RewardsAccountHandler.getActiveAwardsForRedemptions(mapRedemptionEventsInTrigger);
-        System.debug(':::: map size: ' + mapRewardsAccountsWithAwards.size());
-
-        for (Rewards_Event__c reRe : mapRedemptionEventsInTrigger.values()) {
-            Rewards_Account__c acc = mapRewardsAccountsWithAwards?.get(reRe.Rewards_Account__c);
-            List<Rewards_Event__c> lstAwards = acc.Rewards_Events__r;
-            Decimal costOfReward  = reRe.Points__c;
-            Decimal costRemaining = costOfReward;
-            Boolean costCovered   = false;
-
-            for (Rewards_Event__c awRe : lstAwards) {
-                Rewards_Event_Link__c rel = new Rewards_Event_Link__c();
-                rel.Type__c            = 'Redemption';
-                rel.Deduction_Event__c = reRe.Id;
-                rel.Award_Event__c     = awRe.Id;
-
-                if (costRemaining > awRe.Points_Remaining__c) {
-                    rel.Points_Used__c = awRe.Points_Remaining__c;
-                } else {
-                    rel.Points_Used__c = costRemaining;
-                    costCovered = true;
-                }
-                costRemaining -= rel.Points_Used__c;
-                lstRelsToInsert.add(rel);
-                RewardsEventLinkHandler.mapRewardsEventsToUpdate.put(awRe.Id, awRe);
-
-                if (costCovered) {
-                    break;
+    private static Map<Rewards_Account__c, List<Rewards_Event__c>> getMapAccountsToEvents(
+        List<Rewards_Event__c> lstREsInTrigger,
+        Map<Id, Rewards_Account__c> mapRewardsAccountsWithEvents
+    ) {
+        Map<Rewards_Account__c, List<Rewards_Event__c>> mapAccountsToEvents = new Map<Rewards_Account__c, List<Rewards_Event__c>>();
+        
+        // Populate map for each Rewards Account in trigger context
+        for (Rewards_Account__c ra : mapRewardsAccountsWithEvents.values()) {
+            List<Rewards_Event__c> lstRAsRewardsEvents = new List<Rewards_Event__c>();
+            for (Rewards_Event__c re : lstREsInTrigger) {
+                if (re.Rewards_Account__c == ra.Id) {
+                    lstRAsRewardsEvents.add(re);
                 }
             }
+            lstRAsRewardsEvents.addAll(ra.Rewards_Events__r);
+            lstRAsRewardsEvents = sortRewardsEventsByDate(lstRAsRewardsEvents);
+            mapAccountsToEvents.put(ra, lstRAsRewardsEvents);
         }
-        insert lstRelsToInsert;
-        
-    }
-
-    private static void handleExpirations(Map<Id, Rewards_Event__c> mapExpirationEventsInTrigger) {
-        // Daily flow is currently expiring rewards events
+        return mapAccountsToEvents;
     }
 
     private static List<Rewards_Event__c> sortRewardsEventsByDate(List<Rewards_Event__c> lstUnsortedRewardsEvents) {
@@ -200,24 +270,33 @@ public with sharing class RewardsEventHandler {
         return lstSortedRewardsEvents;
     }
 
-    private static void setRecordTypeIds() {
-        if (recordTypeIdsAreSet) return;
+    public static void setRecordTypeIds() {
+        if (recordTypeIdsAreSet) {
+            return;
+        }
         awardRecordTypeId      = Schema.SObjectType.Rewards_Event__c.getRecordTypeInfosByDeveloperName().get('Award').getRecordTypeId();
         redemptionRecordTypeId = Schema.SObjectType.Rewards_Event__c.getRecordTypeInfosByDeveloperName().get('Redemption').getRecordTypeId();
         expirationRecordTypeId = Schema.SObjectType.Rewards_Event__c.getRecordTypeInfosByDeveloperName().get('Expiration').getRecordTypeId();
         recordTypeIdsAreSet = true;
     }
 
+    public static Id getRedemptionRecordTypeId() {
+        if (recordTypeIdsAreSet) {
+            return redemptionRecordTypeId;
+        }
+        setRecordTypeIds();
+        return redemptionRecordTypeId;
+    }
+
     private static Date getExpirationDateForRewardsEvent(
         Rewards_Account__c rewardsAccount, 
-        Decimal reDaysUntilExpiration
+        Date reExpirationDate
     ) {
         List<Date> lstDates = new List<Date>();
         // Get expiration based on number of days until rewards event expires
-        if (reDaysUntilExpiration != null && reDaysUntilExpiration != 0) {
-            Date rewardsEventExpiration = Date.today().addDays( reDaysUntilExpiration.intValue() );
-            lstDates.add(rewardsEventExpiration);
-        } 
+        if (reExpirationDate != null) {
+            lstDates.add(reExpirationDate);
+        }
         // Get expiration based on number of days until rewards program points expire
         if (rewardsAccount.Rewards_Program__r.Days_Until_Points_Expire__c != null) {
             Decimal pDaysUntilExpiration = rewardsAccount.Rewards_Program__r.Days_Until_Points_Expire__c;
@@ -230,11 +309,18 @@ public with sharing class RewardsEventHandler {
             Date rewardsProgramEndDate = Date.newInstance(rpEndDatetime.year(), rpEndDatetime.month(), rpEndDatetime.day());
             lstDates.add(rewardsProgramEndDate);
         }
-        System.debug(':::::::: list of dates before sort: ' + lstDates); 
         // Return earliest date
         lstDates.sort();
-        System.debug(':::::::: list of dates after sort: ' + lstDates); 
         return lstDates[0];
+    }
+
+    public static Map<Id, Rewards_Event__c> getMapRewardsEventsToUpdate() {
+        System.debug('Entered getMapRewardsEventsToUpdate');
+        if (mapRewardsEventsToUpdate == null) {
+            mapRewardsEventsToUpdate = new Map<Id, Rewards_Event__c>();
+        }
+        System.debug('mapRewardsEventsToUpdate.size() is ' + mapRewardsEventsToUpdate.size());
+        return mapRewardsEventsToUpdate;
     }
 
     public static Boolean handleInvokedRewardsEventCreation(
@@ -258,7 +344,7 @@ public with sharing class RewardsEventHandler {
             rewardsAccount.Rewards_Program__r.Days_Until_Points_Expire__c != null || 
             rewardsAccount.Rewards_Program__r.End_Datetime__c != null
         ) {
-            expirationDate = getExpirationDateForRewardsEvent(rewardsAccount, daysUntilExpiration);
+            expirationDate = getExpirationDateForRewardsEvent(rewardsAccount, Date.today().addDays(Integer.valueOf(daysUntilExpiration)));
         }
 
         Rewards_Event__c re = new Rewards_Event__c();

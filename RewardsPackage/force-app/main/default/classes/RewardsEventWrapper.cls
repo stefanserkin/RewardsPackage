@@ -1,8 +1,7 @@
 global class RewardsEventWrapper implements Comparable {
 
     public Rewards_Event__c rewardsEvent;
-    
-    // Constructor
+
     public RewardsEventWrapper(Rewards_Event__c re) {
         rewardsEvent = re;
     }
@@ -21,11 +20,11 @@ global class RewardsEventWrapper implements Comparable {
             // Set return value to a negative value.
             returnValue = -1;
         } else if ((rewardsEvent.Date__c == null) && (compareToRE.rewardsEvent.Date__c != null)){
-            // nulls-first implementation
-            returnValue = -1;
-        } else if ((rewardsEvent.Date__c != null) && (compareToRE.rewardsEvent.Date__c == null)){
-            // nulls-first implementation
+            // nulls-last implementation
             returnValue = 1;
+        } else if ((rewardsEvent.Date__c != null) && (compareToRE.rewardsEvent.Date__c == null)){
+            // nulls-last implementation
+            returnValue = -1;
         }
         return returnValue;
     }

@@ -1,26 +1,28 @@
 public with sharing class RewardsAccountHandler {
 
+    private static Map<Id, Rewards_Account__c> mapRewardsAccounts;
+    private static Map<Id, Rewards_Account__c> mapRewardsAccountsWithEvents;
+
     public static void setRewardsAccountDefaults(List<Rewards_Account__c> lstRAsInTrigger) {
         Map<Id, Contact> mapContacts = getContactMap(lstRAsInTrigger);
         Map<Id, Rewards_Program__c> mapRewardsPrograms = getRewardsProgramMap(lstRAsInTrigger);
 
-        setRewardsAccountName(
-            lstRAsInTrigger,
-            mapRewardsPrograms,
-            mapContacts
-        );
+        setRewardsAccountName(lstRAsInTrigger, mapRewardsPrograms, mapContacts);
+        setDatesFromProgram(lstRAsInTrigger, mapRewardsPrograms);
 
-        setDatesFromProgram(
-            lstRAsInTrigger,
-            mapRewardsPrograms
-        );
     }
 
     public static Map<Id, Rewards_Account__c> getRewardsAccountMap(Set<Id> setRewardsAccountIds) {
+        if (mapRewardsAccounts != null) {
+            return mapRewardsAccounts;
+        }
         return queryForMap(setRewardsAccountIds);
     }
 
     public static Map<Id, Rewards_Account__c> getRewardsAccountMap(List<Rewards_Event__c> lstRewardsEvents) {
+        if (mapRewardsAccounts != null) {
+            return mapRewardsAccounts;
+        }
         Set<Id> setRewardsAccountIds = new Set<Id>();
         for (Rewards_Event__c re : lstRewardsEvents) {
             if (re.Rewards_Account__c != null) {
@@ -31,6 +33,9 @@ public with sharing class RewardsAccountHandler {
     }
 
     public static Map<Id, Rewards_Account__c> getRewardsAccountMap(Map<Id, Rewards_Event__c> mapRewardsEvents) {
+        if (mapRewardsAccounts != null) {
+            return mapRewardsAccounts;
+        }
         Set<Id> setRewardsAccountIds = new Set<Id>();
         for (Rewards_Event__c re : mapRewardsEvents.values()) {
             if (re.Rewards_Account__c != null) {
@@ -38,6 +43,34 @@ public with sharing class RewardsAccountHandler {
             }
         }
         return queryForMap(setRewardsAccountIds);
+    }
+
+    public static Map<Id, Rewards_Account__c> getRewardsAccountWithEventsMap(Set<Id> setRewardsAccountIds) {
+        if (mapRewardsAccountsWithEvents != null) {
+            return mapRewardsAccountsWithEvents;
+        }
+        mapRewardsAccountsWithEvents = queryForMapWithEvents(setRewardsAccountIds);
+        return mapRewardsAccountsWithEvents;
+    }
+
+    public static Map<Id, Rewards_Account__c> getRewardsAccountWithEventsMap(List<Rewards_Event__c> lstRewardsEvents) {
+        if (mapRewardsAccountsWithEvents != null) {
+            return mapRewardsAccountsWithEvents;
+        }
+        Set<Id> setRewardsAccountIds = new Set<Id>();
+        for (Rewards_Event__c re : lstRewardsEvents) {
+            setRewardsAccountIds.add(re.Rewards_Account__c);
+        }
+        mapRewardsAccountsWithEvents = queryForMapWithEvents(setRewardsAccountIds);
+        return mapRewardsAccountsWithEvents;
+    }
+
+    public static Map<Id, Rewards_Account__c> getRewardsAccountWithEventsMap(Set<Id> setRewardsAccountIds, Boolean forceRequery) {
+        if (!forceRequery && mapRewardsAccountsWithEvents != null) {
+            return mapRewardsAccountsWithEvents;
+        }
+        mapRewardsAccountsWithEvents = queryForMapWithEvents(setRewardsAccountIds);
+        return mapRewardsAccountsWithEvents;
     }
 
     public static Rewards_Account__c getRewardsAccount(String contactId, String rewardsProgramId) {
@@ -112,16 +145,37 @@ public with sharing class RewardsAccountHandler {
     }
 
     private static Map<Id, Rewards_Account__c> queryForMap(Set<Id> setRewardsAccountIds) {
-        Map<Id, Rewards_Account__c> mapRewardsAccounts = new Map<Id, Rewards_Account__c>([
+        mapRewardsAccounts = new Map<Id, Rewards_Account__c>([
             SELECT Id, Points_Total__c, Contact__c, Contact__r.FirstName, Contact__r.LastName, 
-                   Rewards_Program__c, Rewards_Program__r.Name, Rewards_Program__r.End_Datetime__c, 
-                   Rewards_Program__r.Days_Until_Points_Expire__c, Status__c 
+                   Rewards_Program__c, Rewards_Program__r.Name, Rewards_Program__r.Start_Datetime__c,
+                   Rewards_Program__r.End_Datetime__c, Rewards_Program__r.Days_Until_Points_Expire__c, 
+                   Status__c 
               FROM Rewards_Account__c 
              WHERE Id IN :setRewardsAccountIds
               WITH SECURITY_ENFORCED
              LIMIT 10000
         ]);
         return mapRewardsAccounts;
+    }
+
+    private static Map<Id, Rewards_Account__c> queryForMapWithEvents(Set<Id> setRewardsAccountIds) {
+        mapRewardsAccountsWithEvents = new Map<Id, Rewards_Account__c>([
+            SELECT Id, Points_Total__c, Contact__c, Contact__r.FirstName, Contact__r.LastName, 
+                   Rewards_Program__c, Rewards_Program__r.Name, Rewards_Program__r.Start_Datetime__c,
+                   Rewards_Program__r.End_Datetime__c, Rewards_Program__r.Days_Until_Points_Expire__c, 
+                   Status__c,
+                   (SELECT Id, Points__c, Points_Balance__c, Date__c, Rewards_Account__c, Rewards_Program_ID__c,
+                           Rewards_Program_Name__c, Description__c, Status__c, Expiration_Date__c,
+                           Points_Remaining__c, Points_Used__c, Points_Expired__c, Expired__c,
+                           RecordTypeId, RecordType.DeveloperName 
+                      FROM Rewards_Events__r
+                     WHERE Status__c != 'Canceled'
+                     ORDER BY Date__c ASC)
+              FROM Rewards_Account__c
+             WHERE Id IN :setRewardsAccountIds
+              WITH SECURITY_ENFORCED
+        ]);
+        return mapRewardsAccountsWithEvents;
     }
 
     private static Map<Id, Contact> getContactMap(List<Rewards_Account__c> lstRAs) {
