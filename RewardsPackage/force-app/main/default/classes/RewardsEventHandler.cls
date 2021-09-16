@@ -22,9 +22,9 @@ public with sharing class RewardsEventHandler {
     }
 
     private static void processBeforeInsert(List<Rewards_Event__c> lstREsInTrigger) {
-        setRecordTypeIds();
-        Map<Id, Rewards_Account__c> mapRewardsAccountsWithEvents = RewardsAccountHandler.getRewardsAccountWithEventsMap(lstREsInTrigger);
+        Map<Id, Rewards_Account__c> mapRewardsAccountsWithEvents = RewardsAccountHandler.getRewardsAccountWithEventsMap(lstREsInTrigger, true);
         Map<Id, Reward__c> mapRewards = RewardsHandler.getRewardsMap(lstREsInTrigger);
+        // Combine map of queried events with new events in before context
         Map<Rewards_Account__c, List<Rewards_Event__c>> 
             mapRewardsAccsToSortedEvents = getMapAccountsToEvents(lstREsInTrigger, mapRewardsAccountsWithEvents);
         updateRecordsInTrigger(mapRewardsAccsToSortedEvents, mapRewardsAccountsWithEvents, mapRewards);
@@ -64,6 +64,13 @@ public with sharing class RewardsEventHandler {
             mapRewardsEventsToUpdate = new Map<Id, Rewards_Event__c>();
         }
         mapRewardsEventsToUpdate.put(re.Id, re);
+    }
+
+    public static void addToMapToUpdate(List<Rewards_Event__c> reList) {
+        if (mapRewardsEventsToUpdate == null) {
+            mapRewardsEventsToUpdate = new Map<Id, Rewards_Event__c>();
+        }
+        mapRewardsEventsToUpdate.putAll(reList);
     }
 
     private static void handleRedemptions(
@@ -114,14 +121,13 @@ public with sharing class RewardsEventHandler {
             
             Decimal raStartingPointsTotal = ra.Points_Total__c != null ? ra.Points_Total__c : 0;
             Decimal runningPointsTotal    = 0;
-            Integer debugCount = 0;
             for (Rewards_Event__c re : mapRewardsAccsToSortedEvents.get(ra)) {
                 
                 setEmptyFields(re, mapRewardsAccountsWithEvents, mapRewards);
                 if (re.RecordTypeId == awardRecordTypeId) {
                     re.Expiration_Date__c = getExpirationDateForRewardsEvent(ra, re.Expiration_Date__c);
                 }
-                if (re.RecordTypeId == redemptionRecordTypeId) {
+                if (re.Id == null && re.RecordTypeId == redemptionRecordTypeId) {
                     Boolean costIsCovered = verifyCostIsCovered(re, raStartingPointsTotal);
                     if (!costIsCovered) {
                         re.addError('Not enough points for reward.');
@@ -130,7 +136,6 @@ public with sharing class RewardsEventHandler {
                 if (re.Points__c != 0) {
                     runningPointsTotal = addToPointsTotal(runningPointsTotal, re, mapRewardsAccountsWithEvents);
                 }
-                debugCount++;
             }
             // Only update accounts if total value has changed
             if (runningPointsTotal != raStartingPointsTotal) {
@@ -315,29 +320,29 @@ public with sharing class RewardsEventHandler {
     }
 
     public static Map<Id, Rewards_Event__c> getMapRewardsEventsToUpdate() {
-        System.debug('Entered getMapRewardsEventsToUpdate');
         if (mapRewardsEventsToUpdate == null) {
             mapRewardsEventsToUpdate = new Map<Id, Rewards_Event__c>();
         }
-        System.debug('mapRewardsEventsToUpdate.size() is ' + mapRewardsEventsToUpdate.size());
         return mapRewardsEventsToUpdate;
     }
 
-    public static Boolean handleInvokedRewardsEventCreation(
+    public static void handleInvokedRewardsEventCreation(
         String rewardsProgramId, String contactId, Decimal points, 
         String description, String relatedEntityId, Decimal daysUntilExpiration
     ) {
-        Boolean insertIsSuccess;
-        Date expirationDate;
-
         setRecordTypeIds();
 
-        Rewards_Account__c rewardsAccount = RewardsAccountHandler.getRewardsAccount(contactId, rewardsProgramId);
+        Date expirationDate;
+        List<Rewards_Account__c> lstRewardsAccounts = RewardsAccountHandler.getRewardsAccountList(
+            contactId, rewardsProgramId
+        );
 
         // If no rewards account, exit
-        if (rewardsAccount == null) {
-            return false;
+        if (lstRewardsAccounts.isEmpty()) {
+            return;
         }
+        Rewards_Account__c rewardsAccount = lstRewardsAccounts[0];
+        
         // If any expiration criteria apply, get earliest expiration date
         if (
             (daysUntilExpiration != null && daysUntilExpiration > 0) || 
@@ -361,16 +366,7 @@ public with sharing class RewardsEventHandler {
         re.Date__c                 = Datetime.now();
         re.Status__c               = 'Active';
 
-        // Insert rewards event and report result back to lightning process that invoked it
-        try {
-            insert re;
-            insertIsSuccess = true;
-        } catch (DmlException e) {
-            insertIsSuccess = false;
-            System.debug(':::: Rewards Event insertion was unsuccessful: ' + e.getMessage());
-        }
-
-        return insertIsSuccess;
+        insert re;
 
     }
     

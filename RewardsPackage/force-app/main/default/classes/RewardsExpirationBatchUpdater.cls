@@ -84,7 +84,7 @@ public without sharing class RewardsExpirationBatchUpdater implements Database.B
         system.debug('apexJob.CreatedBy.Email : '+apexJob.CreatedBy.Email);
         email.setToAddresses(toAddress);
         email.setSubject(apexJob.Status + ': Rewards Expiration Batch Updater');
-        email.setPlainTextBody('The batch Apex job processed ' + apexJob.TotalJobItems + ' batches with '+ apexJob.NumberOfErrors + ' failures.');
+        email.setPlainTextBody('The RewardsExpirationBatchUpdater ran and processed ' + apexJob.TotalJobItems + ' batches with ' + apexJob.NumberOfErrors + ' failures. Job Id: ' + apexJob.Id);
         Messaging.sendEmail(new Messaging.SingleEmailMessage[] { email });
     }
 

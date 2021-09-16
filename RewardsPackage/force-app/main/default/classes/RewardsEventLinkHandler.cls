@@ -45,15 +45,15 @@ public with sharing class RewardsEventLinkHandler {
     }
 
     public static void addToMapToUpdate(Rewards_Event_Link__c rel) {
-        if (mapRewardsEventsToUpdate == null) {
-            mapRewardsEventsToUpdate = new Map<Id, Rewards_Event__c>();
+        if (mapRewardsEventLinksToUpdate == null) {
+            mapRewardsEventLinksToUpdate = new Map<Id, Rewards_Event_Link__c>();
         }
         mapRewardsEventLinksToUpdate.put(rel.Id, rel);
     }
 
     public static void addToMapToUpdate(List<Rewards_Event_Link__c> lstRELs) {
-        if (mapRewardsEventsToUpdate == null) {
-            mapRewardsEventsToUpdate = new Map<Id, Rewards_Event__c>();
+        if (mapRewardsEventLinksToUpdate == null) {
+            mapRewardsEventLinksToUpdate = new Map<Id, Rewards_Event_Link__c>();
         }
         mapRewardsEventLinksToUpdate.putAll(lstRELs);
     }

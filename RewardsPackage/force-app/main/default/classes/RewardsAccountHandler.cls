@@ -6,10 +6,8 @@ public with sharing class RewardsAccountHandler {
     public static void setRewardsAccountDefaults(List<Rewards_Account__c> lstRAsInTrigger) {
         Map<Id, Contact> mapContacts = getContactMap(lstRAsInTrigger);
         Map<Id, Rewards_Program__c> mapRewardsPrograms = getRewardsProgramMap(lstRAsInTrigger);
-
         setRewardsAccountName(lstRAsInTrigger, mapRewardsPrograms, mapContacts);
         setDatesFromProgram(lstRAsInTrigger, mapRewardsPrograms);
-
     }
 
     public static Map<Id, Rewards_Account__c> getRewardsAccountMap(Set<Id> setRewardsAccountIds) {
@@ -65,6 +63,18 @@ public with sharing class RewardsAccountHandler {
         return mapRewardsAccountsWithEvents;
     }
 
+    public static Map<Id, Rewards_Account__c> getRewardsAccountWithEventsMap(List<Rewards_Event__c> lstRewardsEvents, Boolean forceRequery) {
+        if (!forceRequery && mapRewardsAccountsWithEvents != null) {
+            return mapRewardsAccountsWithEvents;
+        }
+        Set<Id> setRewardsAccountIds = new Set<Id>();
+        for (Rewards_Event__c re : lstRewardsEvents) {
+            setRewardsAccountIds.add(re.Rewards_Account__c);
+        }
+        mapRewardsAccountsWithEvents = queryForMapWithEvents(setRewardsAccountIds);
+        return mapRewardsAccountsWithEvents;
+    }
+
     public static Map<Id, Rewards_Account__c> getRewardsAccountWithEventsMap(Set<Id> setRewardsAccountIds, Boolean forceRequery) {
         if (!forceRequery && mapRewardsAccountsWithEvents != null) {
             return mapRewardsAccountsWithEvents;
@@ -73,15 +83,18 @@ public with sharing class RewardsAccountHandler {
         return mapRewardsAccountsWithEvents;
     }
 
-    public static Rewards_Account__c getRewardsAccount(String contactId, String rewardsProgramId) {
-        return [SELECT Id, Points_Total__c, Rewards_Program__c, Rewards_Program__r.Name, 
+    public static List<Rewards_Account__c> getRewardsAccountList(String contactId, String rewardsProgramId) {
+        List<Rewards_Account__c> lstRewardsAccounts = [
+                SELECT Id, Points_Total__c, Rewards_Program__c, Rewards_Program__r.Name, 
                        Rewards_Program__r.End_Datetime__c, Rewards_Program__r.Days_Until_Points_Expire__c
                   FROM Rewards_Account__c 
                  WHERE Contact__c = :contactId 
                    AND Rewards_Program__c = :rewardsProgramId
                    AND Status__c IN ('Pending','Active') 
                   WITH SECURITY_ENFORCED
-                 LIMIT 1];
+                 LIMIT 1
+        ];
+        return lstRewardsAccounts;
     }
 
     public static Map<Id, Rewards_Account__c> getActiveAwardsForRedemptions(Map<Id, Rewards_Event__c> mapRedemptionEvents) {
