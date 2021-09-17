@@ -1,0 +1,53 @@
+<!-- sldsValidatorIgnore -->
+<template>
+    <lightning-card>
+        <h1 slot="title" style={themeStyle}>{componentTitle}</h1>
+        <div slot="actions" class="total-points-box">Points Total:&nbsp; 
+            <lightning-formatted-number value={accPoints}></lightning-formatted-number>
+        </div>
+        <!-- SPINNER ON LOAD -->
+        <lightning-spinner if:true={isLoading} alternative-text="Loading" variant="brand" size="large"></lightning-spinner>
+        <!-- BEGIN TABSET -->
+        <lightning-tabset variant="scoped">
+            <!-- WELCOME TAB WITH REWARDS INFORMATION -->
+            <template if:false={isLoading}>
+                <!-- DISPLAY OF USER REWARDS POINTS HISTORY -->
+                <lightning-tab label="Points History" value="1" onactive={handleActiveTab}>
+                    <lightning-card>
+                        <h1 slot="title" class="subtitle">{pointsHistoryTabTitle}</h1>
+                        <lightning-datatable data={rewardsEventsPerPage} columns={cols} key-field="Id" hide-checkbox-column >
+                        </lightning-datatable>
+                        <br />
+                        <!-- NAVIGATION -->
+                        <lightning-layout horizontal-align="space">
+                            <lightning-layout-item flexibility="auto">
+                                <lightning-button label="Previous" icon-name="utility:chevronleft" onclick={previousHandler}>
+                                </lightning-button>
+                            </lightning-layout-item>
+                            <lightning-layout-item flexibility="auto">
+                                Page {page} of {totalPages}
+                            </lightning-layout-item>
+                            <lightning-layout-item flexibility="auto">
+                                <lightning-button label="Next" icon-name="utility:chevronright" icon-position="right"
+                                    onclick={nextHandler}></lightning-button>
+                            </lightning-layout-item>
+                        </lightning-layout>
+                    </lightning-card>
+                </lightning-tab>
+
+                <!-- FAKE TAB TO HAVE ANOTHER TAB-->
+                <lightning-tab label="All About Rewards" value="2" onactive={handleActiveTab}>
+                    <p>
+                        Contact Id: {contactId}<br />
+                        User's Name: {name}
+                    </p>
+                </lightning-tab>
+            </template>
+        </lightning-tabset>
+        <p slot="footer" if:true={includeLinkToMoreInfo}>
+            <a href={moreInfoURL} target="_blank">
+                {moreInfoURLText}
+            </a>
+        </p>
+    </lightning-card>
+</template>
