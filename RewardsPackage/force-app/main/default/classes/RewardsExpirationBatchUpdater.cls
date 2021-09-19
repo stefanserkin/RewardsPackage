@@ -3,7 +3,7 @@ public without sharing class RewardsExpirationBatchUpdater implements Database.B
     public Database.QueryLocator start(Database.BatchableContext bc) {
         Id awardRecTypeId = Schema.SObjectType.Rewards_Event__c.getRecordTypeInfosByDeveloperName()
                                 .get('Award').getRecordTypeId();
-        String query = 'SELECT Id, Rewards_Program__c, Rewards_Program__r.Name, End_Datetime__c, Status__c,';
+        String query = 'SELECT Id, Rewards_Program__c, Rewards_Program__r.Name, End_Datetime__c, Status__c, Contact__c,';
         query += ' (SELECT Id, Status__c, Points_Remaining__c FROM Rewards_Events__r';
         query += ' WHERE Expiration_Date__c != null AND Expiration_Date__c < TODAY';
         query += ' AND Points_Remaining__c > 0 AND Status__c = \'Active\'';
@@ -41,6 +41,7 @@ public without sharing class RewardsExpirationBatchUpdater implements Database.B
                 ra.Id,
                 new Rewards_Event__c(
                     RecordTypeId            = expRecTypeId,
+                    Contact__c              = ra.Contact__c,
                     Status__c               = 'Applied',
                     Date__c                 = Datetime.now(),
                     Description__c          = 'Points Expired',

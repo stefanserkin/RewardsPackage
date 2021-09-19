@@ -193,6 +193,7 @@ public with sharing class RewardsEventHandler {
         Map<Id, Reward__c> mapRewards
     ) {
         setRecordTypeIds();
+        setUniversalFields(re, mapRewardsAccounts);
         if (re.RecordTypeId == awardRecordTypeId) {
             setEmptyAwardFields(re, mapRewardsAccounts);
         }
@@ -201,26 +202,36 @@ public with sharing class RewardsEventHandler {
         }
     }
 
+    private static void setUniversalFields(
+        Rewards_Event__c re,
+        Map<Id, Rewards_Account__c> mapRewardsAccounts
+    ) {
+        Rewards_Account__c ra = mapRewardsAccounts.get(re.Rewards_Account__c);
+        String programName = mapRewardsAccounts.get(re.Rewards_Account__c)?.Rewards_Program__r?.Name;
+        if (String.isEmpty(re.Rewards_Program_Name__c)) {
+            re.Rewards_Program_Name__c = ra.Rewards_Program__r.Name;
+        }
+        if (String.isEmpty(re.Rewards_Program_ID__c)) {
+            re.Rewards_Program_ID__c = ra.Rewards_Program__c;
+        }
+        if (re.Date__c == null) {
+            re.Date__c = Datetime.now();
+        }
+        if (re.Contact__c == null) {
+            re.Contact__c = ra.Contact__c;
+        }
+    }
+
     private static void setEmptyAwardFields(
         Rewards_Event__c re,
         Map<Id, Rewards_Account__c> mapRewardsAccounts
     ) {
-        String programName = mapRewardsAccounts.get(re.Rewards_Account__c)?.Rewards_Program__r?.Name;
-        String accountStatus = mapRewardsAccounts.get(re.Rewards_Account__c)?.Status__c;
-        if (String.isEmpty(re.Rewards_Program_Name__c)) {
-            re.Rewards_Program_Name__c = programName;
-        }
-        if (String.isEmpty(re.Rewards_Program_ID__c)) {
-            re.Rewards_Program_ID__c = mapRewardsAccounts.get(re.Rewards_Account__c)?.Rewards_Program__c;
-        }
+        Rewards_Account__c ra = mapRewardsAccounts.get(re.Rewards_Account__c);
         if (String.isEmpty(re.Description__c)) {
-            re.Description__c = programName + ' Points';
+            re.Description__c = ra.Rewards_Program__r.Name + ' Points';
         }
         if (String.isEmpty(re.Status__c)) {
-            re.Status__c = accountStatus == 'Active' || accountStatus == 'Pending' ? 'Active' : 'Inactive';
-        }
-        if (re.Date__c == null) {
-            re.Date__c = Datetime.now();
+            re.Status__c = ra.Status__c == 'Active' || ra.Status__c == 'Pending' ? 'Active' : 'Inactive';
         }
     }
 
@@ -229,18 +240,8 @@ public with sharing class RewardsEventHandler {
         Map<Id, Rewards_Account__c> mapRewardsAccounts, 
         Map<Id, Reward__c> mapRewards
     ) {
-        String programName = mapRewardsAccounts.get(re.Rewards_Account__c)?.Rewards_Program__r?.Name;
-        if (String.isEmpty(re.Rewards_Program_Name__c)) {
-            re.Rewards_Program_Name__c = programName;
-        }
-        if (String.isEmpty(re.Rewards_Program_ID__c)) {
-            re.Rewards_Program_ID__c = mapRewardsAccounts.get(re.Rewards_Account__c)?.Rewards_Program__c;
-        }
         if (String.isBlank(re.Description__c)) {
             re.Description__c = mapRewards.get(re.Reward__c)?.Name;
-        }
-        if (re.Date__c == null) {
-            re.Date__c = Datetime.now();
         }
     }
 
@@ -363,6 +364,7 @@ public with sharing class RewardsEventHandler {
         re.Related_Entity_ID__c    = relatedEntityId;
         re.Rewards_Program_ID__c   = rewardsAccount.Rewards_Program__c;
         re.Rewards_Program_Name__c = rewardsAccount.Rewards_Program__r.Name;
+        re.Contact__c              = contactId;
         if (expirationDate != null) {
             re.Expiration_Date__c = expirationDate;
         }

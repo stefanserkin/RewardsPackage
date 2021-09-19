@@ -66,7 +66,7 @@ public with sharing class RewardsEventLinkHandler {
             setRewardsEventsIds.add(rel.Award_Event__c);
         }
         return new Map<Id, Rewards_Event__c>([
-            SELECT Id, Points__c, Points_Remaining__c, Points_Used__c,
+            SELECT Id, Contact__c, Points__c, Points_Remaining__c, Points_Used__c,
                    Points_Expired__c, Status__c, RecordTypeId, Expired__c
               FROM Rewards_Event__c
              WHERE Id IN :setRewardsEventsIds

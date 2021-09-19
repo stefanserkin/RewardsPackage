@@ -85,8 +85,9 @@ public with sharing class RewardsAccountHandler {
 
     public static List<Rewards_Account__c> getRewardsAccountList(String contactId, String rewardsProgramId) {
         List<Rewards_Account__c> lstRewardsAccounts = [
-                SELECT Id, Points_Total__c, Rewards_Program__c, Rewards_Program__r.Name, 
-                       Rewards_Program__r.End_Datetime__c, Rewards_Program__r.Days_Until_Points_Expire__c
+                SELECT Id, Points_Total__c, Rewards_Program__c, Rewards_Program__r.Name, Contact__c, 
+                       Rewards_Program__r.End_Datetime__c, Rewards_Program__r.Days_Until_Points_Expire__c,
+                       Rewards_Program__r.Id, Status__c
                   FROM Rewards_Account__c 
                  WHERE Contact__c = :contactId 
                    AND Rewards_Program__c = :rewardsProgramId
@@ -106,9 +107,9 @@ public with sharing class RewardsAccountHandler {
         Map<Id, Rewards_Account__c> mapRewardsAccounts = new Map<Id, Rewards_Account__c>([
             SELECT Id, Points_Total__c, Contact__c, Contact__r.FirstName, Contact__r.LastName, 
                    Rewards_Program__c, Rewards_Program__r.Name, Rewards_Program__r.End_Datetime__c, 
-                   Rewards_Program__r.Days_Until_Points_Expire__c,
+                   Rewards_Program__r.Days_Until_Points_Expire__c, Rewards_Program__r.Id,
                    (SELECT Id, Points__c, Expiration_Date__c, Date__c, Points_Remaining__c, Points_Used__c,
-                           Status__c, RecordTypeId, Points_Expired__c, Expired__c
+                           Status__c, RecordTypeId, Points_Expired__c, Expired__c, Contact__c
                       FROM Rewards_Events__r
                      WHERE RecordTypeId = :awardRecordTypeId
                        AND Points_Remaining__c > 0
@@ -162,7 +163,7 @@ public with sharing class RewardsAccountHandler {
             SELECT Id, Points_Total__c, Contact__c, Contact__r.FirstName, Contact__r.LastName, 
                    Rewards_Program__c, Rewards_Program__r.Name, Rewards_Program__r.Start_Datetime__c,
                    Rewards_Program__r.End_Datetime__c, Rewards_Program__r.Days_Until_Points_Expire__c, 
-                   Status__c 
+                   Status__c, Rewards_Program__r.Id
               FROM Rewards_Account__c 
              WHERE Id IN :setRewardsAccountIds
               WITH SECURITY_ENFORCED
@@ -176,10 +177,10 @@ public with sharing class RewardsAccountHandler {
             SELECT Id, Points_Total__c, Contact__c, Contact__r.FirstName, Contact__r.LastName, 
                    Rewards_Program__c, Rewards_Program__r.Name, Rewards_Program__r.Start_Datetime__c,
                    Rewards_Program__r.End_Datetime__c, Rewards_Program__r.Days_Until_Points_Expire__c, 
-                   Status__c,
+                   Status__c, Rewards_Program__r.Id,
                    (SELECT Id, Points__c, Points_Balance__c, Date__c, Rewards_Account__c, Rewards_Program_ID__c,
                            Rewards_Program_Name__c, Description__c, Status__c, Expiration_Date__c,
-                           Points_Remaining__c, Points_Used__c, Points_Expired__c, Expired__c,
+                           Points_Remaining__c, Points_Used__c, Points_Expired__c, Expired__c, Contact__c,
                            RecordTypeId, RecordType.DeveloperName 
                       FROM Rewards_Events__r
                      WHERE Status__c != 'Canceled'
