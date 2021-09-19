@@ -77,6 +77,7 @@ export default class CommunityRewardsComponent extends LightningElement {
     activeTab = '1';
     // Modal
     isModalRedeem = false;
+    isModalRedeemIneligible = false;
     isModalOpen = false;
     modalHeader;
     modalBody;
@@ -95,24 +96,6 @@ export default class CommunityRewardsComponent extends LightningElement {
     handleActiveTab(event) {
         const tab = event.target;
         this.activeTab = tab.value;
-    }
-
-    goNext() {
-        let activeTabValue = Number(this.activeTab) + 1;
-        this.activeTab = activeTabValue.toString();
-    }
-
-    goBack() {
-        let activeTabValue = Number(this.activeTab) - 1;
-        this.activeTab = activeTabValue.toString();
-    }
-
-    get isGoNextDisabled() {
-        return this.activeTab === '3' ? true : false;
-    }
-
-    get isGoBackDisabled() {
-        return this.activeTab === '1' ? true : false;
     }
 
     // Wire user
@@ -287,6 +270,10 @@ export default class CommunityRewardsComponent extends LightningElement {
         return Object.keys(rtis).find(rti => rtis[rti].name === 'Redemption');
     }
 
+    get pointsToIneligibleReward() {
+        return (this.points - this.accPoints).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    }
+
     handleRewardSelection(event) {
         this.selectedReward = event.target.dataset.recordid;
         this.points = event.target.dataset.points;
@@ -298,12 +285,21 @@ export default class CommunityRewardsComponent extends LightningElement {
         this.isModalOpen = true;
     }
 
-    handleIneligibleRewardSelection() {
-        alert('More points are needed to unlock this reward.');
+    handleIneligibleRewardSelection(event) {
+        this.selectedReward = event.target.dataset.recordid;
+        this.points = event.target.dataset.points;
+        this.description = event.target.dataset.description;
+
+        this.modalHeader = 'Not enough points...';
+        this.modalBody = `${this.pointsToIneligibleReward} more points are needed to unlock ${this.description}.`;
+        this.isModalRedeemIneligible = true;
+        this.isModalOpen = true;
     }
 
     closeModal() {
         this.isModalOpen = false;
+        this.isModalRedeem = false;
+        this.isModalRedeemIneligible = false;
     }
 
     closeRedeemModal() {
@@ -336,14 +332,15 @@ export default class CommunityRewardsComponent extends LightningElement {
                         variant: 'success'
                     })
                 );
-                // refreshApex(this.wiredRewardsAccount);
-                // refreshApex(this.wiredRewardsEventList);
-                // refreshApex(this.wiredRewardsResult);
-                // refreshApex(this.wiredIneligibleRewardsResult);
+                refreshApex(this.wiredRewardsAccount);
+                refreshApex(this.wiredRewardsEventList);
+                refreshApex(this.wiredRewardsResult);
+                refreshApex(this.wiredIneligibleRewardsResult);
                 console.log('active tab when exiting create records : ' + this.activeTab);
                 this.isLoading = false;
             })
             .catch((error) => {
+                this.error = error;
                 this.dispatchEvent(
                     new ShowToastEvent({
                         title: 'Error creating record',

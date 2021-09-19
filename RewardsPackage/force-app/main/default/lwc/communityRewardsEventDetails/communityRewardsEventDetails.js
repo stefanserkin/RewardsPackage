@@ -22,6 +22,7 @@ const COLS = [
 
 export default class CommunityRewardsEventDetails extends LightningElement {
     @api rewardsevent;
+    @api themeStyle;
 
     get isAwardEvent() {
         return this.rewardsevent.Type__c === 'Award';
@@ -53,8 +54,20 @@ export default class CommunityRewardsEventDetails extends LightningElement {
     get name() {
         return this.rewardsevent.Name;
     }
-    get image() {
+    get imageUrl() {
         return this.rewardsevent.Reward__r.Image_URL__c;
+    }
+    get rewardDetails() {
+        return this.rewardsevent.Reward__r.Details__c;
+    }
+    get hasRewardDetails() {
+        return this.rewardDetails ? true : false;
+    }
+    get redemptionInstructions() {
+        return this.rewardsevent.Reward__r.Redemption_Instructions__c;
+    }
+    get isPendingRedemption() {
+        return this.isRedemptionEvent && this.status === 'Pending' ? true : false;
     }
     
     cols = COLS;

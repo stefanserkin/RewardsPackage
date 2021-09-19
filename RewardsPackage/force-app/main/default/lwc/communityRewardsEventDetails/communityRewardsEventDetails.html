@@ -2,10 +2,9 @@
 <template>
     <lightning-card>
         <lightning-button label="Back" icon-name="utility:chevronleft" onclick={backHandler}></lightning-button>
-        <lightning-button label="Debug" onclick={handleDebug}></lightning-button>
         <template if:true={rewardsevent}>
-            <img if:true={isRedemptionEvent} class="rewards-image" src={image} />
-            <h1 class="slds-text-heading_medium slds-m-around_medium">{cardTitle}</h1>
+            <img if:true={isRedemptionEvent} class="rewards-image slds-float_left slds-m-around_medium" src={imageUrl} />
+            <h1 class="slds-text-heading_medium slds-m-around_medium"><span style={themeStyle}>{cardTitle}</span></h1>
 
             <ul class="slds-list_horizontal slds-has-dividers_right slds-has-block-links_space slds-m-around_medium">
                 <li class="slds-item slds-text-heading_small">
@@ -23,6 +22,22 @@
                     ID:&nbsp; {name}
                 </li>
             </ul>
+            <template if:true={isRedemptionEvent}>
+                <p if:true={hasRewardDetails} class="slds-m-around_medium"><strong>Reward Details</strong></p>
+                <p class="slds-m-around_medium">
+                    <lightning-formatted-rich-text
+                        value={rewardDetails}
+                    ></lightning-formatted-rich-text>
+                </p>
+                <template if:true={isPendingRedemption}>
+                    <p class="slds-m-around_medium"><strong>Instructions for Collecting your Reward</strong></p>
+                    <p class="slds-m-around_medium">
+                        <lightning-formatted-rich-text
+                            value={redemptionInstructions}
+                        ></lightning-formatted-rich-text>
+                    </p>
+                </template>
+            </template>
 
             <template if:true={isExpirationEvent}>
                 <lightning-datatable data={rewardsEventList} columns={cols} key-field="Id" hide-checkbox-column >
