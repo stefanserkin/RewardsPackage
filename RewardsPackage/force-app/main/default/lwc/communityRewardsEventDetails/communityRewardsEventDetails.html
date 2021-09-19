@@ -1,0 +1,40 @@
+<!-- sldsValidatorIgnore -->
+<template>
+    <lightning-card>
+        <lightning-button label="Back" icon-name="utility:chevronleft" onclick={backHandler}></lightning-button>
+        <lightning-button label="Debug" onclick={handleDebug}></lightning-button>
+        <template if:true={rewardsevent}>
+            <img if:true={isRedemptionEvent} class="rewards-image" src={image} />
+            <h1 class="slds-text-heading_medium slds-m-around_medium">{cardTitle}</h1>
+
+            <ul class="slds-list_horizontal slds-has-dividers_right slds-has-block-links_space slds-m-around_medium">
+                <li class="slds-item slds-text-heading_small">
+                    Date:&nbsp; 
+                    <lightning-formatted-date-time value={date}>
+                    </lightning-formatted-date-time>
+                </li>
+                <li class="slds-item slds-text-heading_small">
+                    Points:&nbsp; {points}
+                </li>
+                <li if:true={isRedemptionEvent} class="slds-item slds-text-heading_small">
+                    Status:&nbsp; {status}
+                </li>
+                <li class="slds-item slds-text-heading_small">
+                    ID:&nbsp; {name}
+                </li>
+            </ul>
+
+            <template if:true={isExpirationEvent}>
+                <lightning-datatable data={rewardsEventList} columns={cols} key-field="Id" hide-checkbox-column >
+                </lightning-datatable>
+            </template>
+
+            <div style="clear: both;"></div>
+        </template>
+
+        <template if:false={rewardsevent}>
+            No data is available for this rewards event.
+        </template>
+
+    </lightning-card>
+</template>

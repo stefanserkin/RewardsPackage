@@ -5,5 +5,6 @@ public with sharing class RewardsEventHandler_Test {
     static void unitTest1() {
         
     }
+
     
 }

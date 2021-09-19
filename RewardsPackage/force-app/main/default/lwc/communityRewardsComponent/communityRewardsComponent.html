@@ -1,47 +1,174 @@
 <!-- sldsValidatorIgnore -->
 <template>
     <lightning-card>
-        <h1 slot="title" style={themeStyle}>{componentTitle}</h1>
+        <h1 slot="title"><span style={themeStyle}>{componentTitle}</span></h1>
         <div slot="actions" class="total-points-box">Points Total:&nbsp; 
             <lightning-formatted-number value={accPoints}></lightning-formatted-number>
         </div>
         <!-- SPINNER ON LOAD -->
         <lightning-spinner if:true={isLoading} alternative-text="Loading" variant="brand" size="large"></lightning-spinner>
+        <!-- MODAL -->
+        <template if:true={isModalOpen}>
+            <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <!-- MODAL HEADER -->
+                    <header class="slds-modal__header">
+                        <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick={closeModal}>
+                            <lightning-icon icon-name="utility:close"
+                                alternative-text="close"
+                                variant="inverse"
+                                size="small" >
+                            </lightning-icon>
+                            <span class="slds-assistive-text">Close</span>
+                        </button>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">{modalHeader}</h2>
+                    </header>
+                    <!-- MODAL BODY -->
+                    <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                        <p>{modalBody}</p>
+                    </div>
+                    <!-- MODAL FOOTER -->
+                    <footer class="slds-modal__footer">
+                        <template if:true={isModalRedeem}>
+                            <button class="slds-button slds-button_neutral" onclick={closeModal} title="Cancel">Cancel</button>
+                            <button class="slds-button slds-button_brand" onclick={closeRedeemModal} title="Redeem">Confirm</button>
+                        </template>
+                    </footer>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+        <lightning-button label="Back Tab" onclick={goBack} disabled={isGoBackDisabled}></lightning-button>
+        <lightning-button label="Next Tab" onclick={goNext} disabled={isGoNextDisabled}></lightning-button>
         <!-- BEGIN TABSET -->
-        <lightning-tabset variant="scoped">
-            <!-- WELCOME TAB WITH REWARDS INFORMATION -->
+        <lightning-tabset variant="scoped" active-tab-value={activeTab}>
             <template if:false={isLoading}>
                 <!-- DISPLAY OF USER REWARDS POINTS HISTORY -->
                 <lightning-tab label="Points History" value="1" onactive={handleActiveTab}>
                     <lightning-card>
-                        <h1 slot="title" class="subtitle">{pointsHistoryTabTitle}</h1>
-                        <lightning-datatable data={rewardsEventsPerPage} columns={cols} key-field="Id" hide-checkbox-column >
-                        </lightning-datatable>
-                        <br />
-                        <!-- NAVIGATION -->
-                        <lightning-layout horizontal-align="space">
-                            <lightning-layout-item flexibility="auto">
-                                <lightning-button label="Previous" icon-name="utility:chevronleft" onclick={previousHandler}>
-                                </lightning-button>
-                            </lightning-layout-item>
-                            <lightning-layout-item flexibility="auto">
-                                Page {page} of {totalPages}
-                            </lightning-layout-item>
-                            <lightning-layout-item flexibility="auto">
-                                <lightning-button label="Next" icon-name="utility:chevronright" icon-position="right"
-                                    onclick={nextHandler}></lightning-button>
-                            </lightning-layout-item>
-                        </lightning-layout>
+                        <template if:true={showPointsTable}>
+                            <div class="slds-m-bottom_medium slds-m-left_medium">
+                                <h2><span style={themeStyle}>{pointsHistoryTabTitle}</span></h2>
+                            </div>
+                            <lightning-datatable data={rewardsEventsPerPage} columns={cols} key-field="Id" onrowaction={handleRowAction} hide-checkbox-column >
+                            </lightning-datatable>
+                        
+                            <br />
+                            <!-- NAVIGATION -->
+                            <lightning-layout horizontal-align="space">
+                                <lightning-layout-item flexibility="auto">
+                                    <lightning-button label="Previous" icon-name="utility:chevronleft" onclick={previousHandler}>
+                                    </lightning-button>
+                                </lightning-layout-item>
+                                <lightning-layout-item flexibility="auto">
+                                    Page {page} of {totalPages}
+                                </lightning-layout-item>
+                                <lightning-layout-item flexibility="auto">
+                                    <lightning-button label="Next" icon-name="utility:chevronright" icon-position="right"
+                                        onclick={nextHandler}></lightning-button>
+                                </lightning-layout-item>
+                            </lightning-layout>
+                        </template>
+
+                        <template if:true={showPointsDetail}>
+                            <c-community-rewards-event-details 
+                                rewardseventid={selectedRewardsEventId}
+                                rewardsevent={selectedRewardsEvent}
+                                onback={handleBackToTable}
+                            >
+                            </c-community-rewards-event-details>
+                        </template>
                     </lightning-card>
                 </lightning-tab>
 
-                <!-- FAKE TAB TO HAVE ANOTHER TAB-->
-                <lightning-tab label="All About Rewards" value="2" onactive={handleActiveTab}>
-                    <p>
-                        Contact Id: {contactId}<br />
-                        User's Name: {name}
-                    </p>
+                <!-- BROWSE AND REDEEM REWARDS -->
+                <lightning-tab label="Rewards" value="2" onactive={handleActiveTab}>
+                    <lightning-card>
+                        <div class="slds-m-bottom_medium slds-m-left_medium">
+                            <h2 if:true={hasEligibleRewards}><span style={themeStyle}>Redeem Rewards</span></h2>
+                        </div>
+                        <!-- ELIGIBLE REWARDS -->
+                        <div class="slds-var-m-around_medium lgc-bg">
+                            <lightning-layout multiple-rows=true>
+                                <template for:each={rewards} for:item="reward">
+                                    <lightning-layout-item key={reward.Id} class="slds-has-dividers_bottom-space slds-size_1-of-3">
+                                        <div class="reward-tile-container">
+                                            <img src={reward.Image_URL__c} 
+                                                onclick={handleRewardSelection} 
+                                                data-recordid={reward.Id}
+                                                data-points={reward.Cost__c}
+                                                data-description={reward.Name}
+                                                class="reward-tile eligible"
+                                            />
+                                            <div class="reward-tile-text"
+                                                onclick={handleRewardSelection} 
+                                                data-recordid={reward.Id}
+                                                data-points={reward.Cost__c}
+                                                data-description={reward.Name}
+                                            >
+                                            {reward.Name}<br />
+                                            Cost:&nbsp;
+                                            <lightning-formatted-number value={reward.Cost__c} maximum-fraction-digits="0"></lightning-formatted-number>
+                                            &nbsp;pts
+                                            </div>
+                                        </div>
+                                    </lightning-layout-item>
+                                </template>
+                            </lightning-layout>
+                        </div>
+                        <!-- INELIGIBLE REWARDS -->
+                        <div class="slds-var-m-around_medium lgc-bg">
+                            <div class="slds-m-bottom_medium slds-m-left_medium">
+                                <h2 if:true={hasIneligibleRewards}><span style={themeStyle}>Keep earning points to be eligible for these rewards!</span></h2>
+                            </div>
+                            <lightning-layout multiple-rows=true>
+                                <template for:each={ineligibleRewards} for:item="ineligibleReward">
+                                    <lightning-layout-item key={ineligibleReward.Id} class="slds-has-dividers_bottom-space slds-size_1-of-3">
+                                        <div class="reward-tile-container">
+                                            <img src={ineligibleReward.Image_URL__c}
+                                                onclick={handleIneligibleRewardSelection}
+                                                class="reward-tile ineligible"
+                                            />
+                                            <div class="reward-tile-text"
+                                                onclick={handleIneligibleRewardSelection}
+                                            >
+                                            {ineligibleReward.Name}
+                                            <br />
+                                            Cost:&nbsp;
+                                            <lightning-formatted-number value={ineligibleReward.Cost__c} maximum-fraction-digits="0"></lightning-formatted-number>
+                                            &nbsp;pts
+                                            </div>
+                                        </div>
+                                    </lightning-layout-item>
+                                </template>
+                            </lightning-layout>
+                        </div>
+                    </lightning-card>
+                    
                 </lightning-tab>
+
+                <!-- New tab because this ones broked -->
+                <lightning-tab label="Information" value="3" onactive={handleActiveTab}>
+                    <lightning-card>
+                        <div class="slds-m-bottom_medium slds-m-left_medium">
+                            <h2><span style={themeStyle}>How to Use Your Redemptions</span></h2>
+                        </div>
+                        <p class="slds-var-m-around_medium">
+                            For appointment-type rewards, look out for an email with instructions on how to schedule your appointment.
+                        </p>
+                        <p class="slds-var-m-around_medium">
+                            For products and goods, stop by the desk and we'll have your reward waiting for you!
+                        </p>
+                        <div class=slds-var-m-around_medium>
+                            <h2><span style={themeStyle}>Debuggery</span></h2>
+                        </div>
+                        <p class="slds-var-m-around_medium">
+                            Contact Id: {contactId}<br />
+                            User's Name: {name}
+                        </p>
+                    </lightning-card>
+                </lightning-tab>
+
             </template>
         </lightning-tabset>
         <p slot="footer" if:true={includeLinkToMoreInfo}>

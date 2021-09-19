@@ -239,6 +239,9 @@ public with sharing class RewardsEventHandler {
         if (String.isBlank(re.Description__c)) {
             re.Description__c = mapRewards.get(re.Reward__c)?.Name;
         }
+        if (re.Date__c == null) {
+            re.Date__c = Datetime.now();
+        }
     }
 
     private static Map<Rewards_Account__c, List<Rewards_Event__c>> getMapAccountsToEvents(

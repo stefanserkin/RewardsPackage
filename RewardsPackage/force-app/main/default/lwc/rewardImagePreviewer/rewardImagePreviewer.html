@@ -1,0 +1,25 @@
+<template>
+    <lightning-card title="Image Preview">
+
+        <div class="slds-var-m-around_medium lgc-bg">
+            <h3>Eligible Reward</h3>
+            <div class="reward-tile-container">
+                <img src={url} class="reward-tile eligible" />
+                <div class="reward-tile-text">
+                {name}<br />
+                Cost: {cost} pts
+                </div>
+            </div>
+            <h3>Ineligible Reward</h3>
+            <div class="reward-tile-container">
+                <img src={url} class="reward-tile ineligible" />
+                <div class="reward-tile-text">
+                {name}
+                <br />
+                Cost: {cost} pts
+                </div>
+            </div>
+        </div>
+
+    </lightning-card>
+</template>

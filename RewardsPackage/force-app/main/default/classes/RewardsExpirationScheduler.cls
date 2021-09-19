@@ -1,6 +1,6 @@
 public without sharing class RewardsExpirationScheduler implements Schedulable {
 
-    public static String schedule = '0 10 19 ? * *'; // Every day at 12:26pm
+    public static String schedule = '0 31 16 ? * *'; // Every day at 4:31pm
 
     public static String run() {
         RewardsExpirationScheduler res = new RewardsExpirationScheduler(); 
