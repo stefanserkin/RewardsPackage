@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RecordType xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Expiration</fullName>
+    <active>true</active>
+    <description>Expiration of an Award Rewards Event</description>
+    <label>Expiration</label>
+    <picklistValues>
+        <picklist>Status__c</picklist>
+        <values>
+            <fullName>Applied</fullName>
+            <default>true</default>
+        </values>
+    </picklistValues>
+</RecordType>

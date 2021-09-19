@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Award_Event__c</fullName>
+    <deleteConstraint>Restrict</deleteConstraint>
+    <description>The Award-type Rewards Event that points are being taken from</description>
+    <externalId>false</externalId>
+    <inlineHelpText>The Award-type Rewards Event that points are being taken from</inlineHelpText>
+    <label>Award Event</label>
+    <referenceTo>Rewards_Event__c</referenceTo>
+    <relationshipLabel>Deduction Events</relationshipLabel>
+    <relationshipName>Deduction_Event_Links</relationshipName>
+    <required>true</required>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>Lookup</type>
+</CustomField>

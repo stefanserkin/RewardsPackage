@@ -1,17 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
-    <fullName>Points_Spent__c</fullName>
+    <fullName>Points_Remaining__c</fullName>
+    <description>Points minus points used and expired</description>
     <externalId>false</externalId>
-    <formula>IF( 
-  OR(
-    RecordType.DeveloperName = &apos;Redemption&apos; ,
-    RecordType.DeveloperName = &apos;Expiration&apos;
-  ) ,
-  Points__c ,
-  null
-)</formula>
+    <formula>Points__c - ( Points_Used__c + Points_Expired__c )</formula>
     <formulaTreatBlanksAs>BlankAsZero</formulaTreatBlanksAs>
-    <label>Points Spent</label>
+    <inlineHelpText>Points minus points used and expired</inlineHelpText>
+    <label>Points Remaining</label>
     <precision>18</precision>
     <required>false</required>
     <scale>0</scale>

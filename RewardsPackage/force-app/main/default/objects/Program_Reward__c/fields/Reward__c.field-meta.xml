@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>Reward__c</fullName>
+    <description>The Reward to make eligible in this Rewards Program</description>
+    <externalId>false</externalId>
+    <inlineHelpText>The Reward to make eligible in this Rewards Program</inlineHelpText>
+    <label>Reward</label>
+    <referenceTo>Reward__c</referenceTo>
+    <relationshipLabel>Program Rewards</relationshipLabel>
+    <relationshipName>Program_Rewards</relationshipName>
+    <relationshipOrder>0</relationshipOrder>
+    <reparentableMasterDetail>false</reparentableMasterDetail>
+    <trackHistory>false</trackHistory>
+    <trackTrending>false</trackTrending>
+    <type>MasterDetail</type>
+    <writeRequiresMasterRead>false</writeRequiresMasterRead>
+</CustomField>

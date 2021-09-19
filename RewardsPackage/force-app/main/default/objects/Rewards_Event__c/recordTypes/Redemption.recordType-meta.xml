@@ -16,7 +16,7 @@
         </values>
         <values>
             <fullName>Pending</fullName>
-            <default>false</default>
+            <default>true</default>
         </values>
     </picklistValues>
 </RecordType>

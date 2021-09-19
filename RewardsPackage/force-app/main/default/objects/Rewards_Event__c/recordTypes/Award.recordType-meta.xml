@@ -8,18 +8,14 @@
         <picklist>Status__c</picklist>
         <values>
             <fullName>Active</fullName>
+            <default>true</default>
+        </values>
+        <values>
+            <fullName>Canceled</fullName>
             <default>false</default>
         </values>
         <values>
-            <fullName>Expired</fullName>
-            <default>false</default>
-        </values>
-        <values>
-            <fullName>Fulfilled</fullName>
-            <default>false</default>
-        </values>
-        <values>
-            <fullName>Pending</fullName>
+            <fullName>Empty</fullName>
             <default>false</default>
         </values>
     </picklistValues>
