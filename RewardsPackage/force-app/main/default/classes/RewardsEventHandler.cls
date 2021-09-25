@@ -7,6 +7,31 @@ public with sharing class RewardsEventHandler {
     private static Map<Id, Rewards_Account__c> mapRewardsAccountsToUpdate;
     private static Map<Id, Rewards_Event__c> mapRewardsEventsToUpdate;
 
+    public static void setRecordTypeIds() {
+        if (recordTypeIdsAreSet) {
+            return;
+        }
+        awardRecordTypeId      = Schema.SObjectType.Rewards_Event__c.getRecordTypeInfosByDeveloperName().get('Award').getRecordTypeId();
+        redemptionRecordTypeId = Schema.SObjectType.Rewards_Event__c.getRecordTypeInfosByDeveloperName().get('Redemption').getRecordTypeId();
+        expirationRecordTypeId = Schema.SObjectType.Rewards_Event__c.getRecordTypeInfosByDeveloperName().get('Expiration').getRecordTypeId();
+        recordTypeIdsAreSet = true;
+    }
+
+    public static Id getRedemptionRecordTypeId() {
+        if (recordTypeIdsAreSet) {
+            return redemptionRecordTypeId;
+        }
+        setRecordTypeIds();
+        return redemptionRecordTypeId;
+    }
+
+    public static Map<Id, Rewards_Event__c> getMapRewardsEventsToUpdate() {
+        if (mapRewardsEventsToUpdate == null) {
+            mapRewardsEventsToUpdate = new Map<Id, Rewards_Event__c>();
+        }
+        return mapRewardsEventsToUpdate;
+    }
+    
     public static void addToMapToUpdate(Rewards_Event__c re) {
         if (mapRewardsEventsToUpdate == null) {
             mapRewardsEventsToUpdate = new Map<Id, Rewards_Event__c>();
@@ -31,6 +56,51 @@ public with sharing class RewardsEventHandler {
         if (mapRewardsAccountsToUpdate != null && !mapRewardsAccountsToUpdate.isEmpty()) {
             update mapRewardsAccountsToUpdate.values();
         }
+    }
+
+    public static void handleInvokedRewardsEventCreation(
+        String rewardsProgramId, String contactId, Decimal points, 
+        String description, String relatedEntityId, Decimal daysUntilExpiration
+    ) {
+        setRecordTypeIds();
+
+        Date expirationDate;
+        List<Rewards_Account__c> lstRewardsAccounts = RewardsAccountHandler.getRewardsAccountList(
+            contactId, rewardsProgramId
+        );
+
+        // If no rewards account, exit
+        if (lstRewardsAccounts.isEmpty()) {
+            return;
+        }
+        Rewards_Account__c rewardsAccount = lstRewardsAccounts[0];
+
+        Rewards_Event__c re = new Rewards_Event__c();
+        re.RecordTypeId            = awardRecordTypeId;
+        re.Rewards_Account__c      = rewardsAccount.Id;
+        re.Points__c               = points;
+        re.Description__c          = description;
+        re.Related_Entity_ID__c    = relatedEntityId;
+        re.Rewards_Program_ID__c   = rewardsAccount.Rewards_Program__c;
+        re.Rewards_Program_Name__c = rewardsAccount.Rewards_Program__r.Name;
+        re.Contact__c              = contactId;
+        // If any expiration criteria apply, get earliest expiration date
+        if (
+            (daysUntilExpiration != null && daysUntilExpiration > 0) || 
+            rewardsAccount.Rewards_Program__r.Days_Until_Points_Expire__c != null || 
+            rewardsAccount.Rewards_Program__r.End_Datetime__c != null
+        ) {
+            re.Expiration_Date__c = getExpirationDateForRewardsEvent(
+                rewardsAccount, 
+                re, 
+                Date.today().addDays(Integer.valueOf(daysUntilExpiration))
+            );
+        }
+        re.Date__c                 = Datetime.now();
+        re.Status__c               = 'Active';
+
+        insert re;
+
     }
 
     public static void handleTriggerEvent(
@@ -283,24 +353,6 @@ public with sharing class RewardsEventHandler {
         return lstSortedRewardsEvents;
     }
 
-    public static void setRecordTypeIds() {
-        if (recordTypeIdsAreSet) {
-            return;
-        }
-        awardRecordTypeId      = Schema.SObjectType.Rewards_Event__c.getRecordTypeInfosByDeveloperName().get('Award').getRecordTypeId();
-        redemptionRecordTypeId = Schema.SObjectType.Rewards_Event__c.getRecordTypeInfosByDeveloperName().get('Redemption').getRecordTypeId();
-        expirationRecordTypeId = Schema.SObjectType.Rewards_Event__c.getRecordTypeInfosByDeveloperName().get('Expiration').getRecordTypeId();
-        recordTypeIdsAreSet = true;
-    }
-
-    public static Id getRedemptionRecordTypeId() {
-        if (recordTypeIdsAreSet) {
-            return redemptionRecordTypeId;
-        }
-        setRecordTypeIds();
-        return redemptionRecordTypeId;
-    }
-
     private static Date getExpirationDateForRewardsEvent(
         Rewards_Account__c rewardsAccount, 
         Rewards_Event__c rewardsEvent,
@@ -328,58 +380,6 @@ public with sharing class RewardsEventHandler {
         // Return earliest date
         lstDates.sort();
         return lstDates[0];
-    }
-
-    public static Map<Id, Rewards_Event__c> getMapRewardsEventsToUpdate() {
-        if (mapRewardsEventsToUpdate == null) {
-            mapRewardsEventsToUpdate = new Map<Id, Rewards_Event__c>();
-        }
-        return mapRewardsEventsToUpdate;
-    }
-
-    public static void handleInvokedRewardsEventCreation(
-        String rewardsProgramId, String contactId, Decimal points, 
-        String description, String relatedEntityId, Decimal daysUntilExpiration
-    ) {
-        setRecordTypeIds();
-
-        Date expirationDate;
-        List<Rewards_Account__c> lstRewardsAccounts = RewardsAccountHandler.getRewardsAccountList(
-            contactId, rewardsProgramId
-        );
-
-        // If no rewards account, exit
-        if (lstRewardsAccounts.isEmpty()) {
-            return;
-        }
-        Rewards_Account__c rewardsAccount = lstRewardsAccounts[0];
-
-        Rewards_Event__c re = new Rewards_Event__c();
-        re.RecordTypeId            = awardRecordTypeId;
-        re.Rewards_Account__c      = rewardsAccount.Id;
-        re.Points__c               = points;
-        re.Description__c          = description;
-        re.Related_Entity_ID__c    = relatedEntityId;
-        re.Rewards_Program_ID__c   = rewardsAccount.Rewards_Program__c;
-        re.Rewards_Program_Name__c = rewardsAccount.Rewards_Program__r.Name;
-        re.Contact__c              = contactId;
-        // If any expiration criteria apply, get earliest expiration date
-        if (
-            (daysUntilExpiration != null && daysUntilExpiration > 0) || 
-            rewardsAccount.Rewards_Program__r.Days_Until_Points_Expire__c != null || 
-            rewardsAccount.Rewards_Program__r.End_Datetime__c != null
-        ) {
-            re.Expiration_Date__c = getExpirationDateForRewardsEvent(
-                rewardsAccount, 
-                re, 
-                Date.today().addDays(Integer.valueOf(daysUntilExpiration))
-            );
-        }
-        re.Date__c                 = Datetime.now();
-        re.Status__c               = 'Active';
-
-        insert re;
-
     }
     
 }
