@@ -13,7 +13,11 @@
                     </lightning-formatted-date-time>
                 </li>
                 <li class="slds-item slds-text-heading_small">
-                    Points:&nbsp; {points}
+                    Points:&nbsp; 
+                    <lightning-formatted-number 
+                        value={points}
+                        maximum-fraction-digits="0">
+                    </lightning-formatted-number>
                 </li>
                 <li if:true={isRedemptionEvent} class="slds-item slds-text-heading_small">
                     Status:&nbsp; {status}

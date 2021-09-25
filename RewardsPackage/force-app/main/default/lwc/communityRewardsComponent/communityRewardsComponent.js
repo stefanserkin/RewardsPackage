@@ -1,4 +1,4 @@
-import { LightningElement, wire, api } from 'lwc';
+import { LightningElement, wire, api, track } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { refreshApex } from '@salesforce/apex';
 import { getRecord } from 'lightning/uiRecordApi';
@@ -260,6 +260,7 @@ export default class CommunityRewardsComponent extends LightningElement {
     selectedReward;
     points;
     description;
+    rewardDetails;
     rewardsEventStatus = 'Pending';
 
     @wire(getObjectInfo, { objectApiName: REWARDSEVENT_OBJECT })
@@ -271,16 +272,16 @@ export default class CommunityRewardsComponent extends LightningElement {
     }
 
     get pointsToIneligibleReward() {
-        return (this.points - this.accPoints).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+        return this.points - this.accPoints;
     }
-
+    
     handleRewardSelection(event) {
-        this.selectedReward = event.target.dataset.recordid;
-        this.points = event.target.dataset.points;
-        this.description = event.target.dataset.description;
-
+        const rewardData = event.target.dataset;
+        this.selectedReward = rewardData.recordid;
+        this.rewardDetails = rewardData.details;
+        this.points = rewardData.points;
+        this.description = rewardData.description;
         this.modalHeader = 'Redeem Reward';
-        this.modalBody = `Are you sure you would like to redeem ${this.description} for ${this.points} points?`;
         this.isModalRedeem = true;
         this.isModalOpen = true;
     }
@@ -289,6 +290,7 @@ export default class CommunityRewardsComponent extends LightningElement {
         this.selectedReward = event.target.dataset.recordid;
         this.points = event.target.dataset.points;
         this.description = event.target.dataset.description;
+        this.rewardDetails = event.target.dataset.details;
 
         this.modalHeader = 'Not enough points...';
         this.modalBody = `${this.pointsToIneligibleReward} more points are needed to unlock ${this.description}.`;
@@ -322,8 +324,6 @@ export default class CommunityRewardsComponent extends LightningElement {
         const recordInput = { apiName: REWARDSEVENT_OBJECT.objectApiName, fields };
         createRecord(recordInput)
             .then((rewardsEvent) => {
-                this.activeTab = '1';
-                console.log('active tab when entering create records : ' + this.activeTab);
                 this.rewardsEventId = rewardsEvent.id;
                 this.dispatchEvent(
                     new ShowToastEvent({
@@ -336,7 +336,7 @@ export default class CommunityRewardsComponent extends LightningElement {
                 refreshApex(this.wiredRewardsEventList);
                 refreshApex(this.wiredRewardsResult);
                 refreshApex(this.wiredIneligibleRewardsResult);
-                console.log('active tab when exiting create records : ' + this.activeTab);
+                this.activeTab = '1';
                 this.isLoading = false;
             })
             .catch((error) => {

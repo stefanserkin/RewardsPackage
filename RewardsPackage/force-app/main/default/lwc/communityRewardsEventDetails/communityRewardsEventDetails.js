@@ -96,9 +96,4 @@ export default class CommunityRewardsEventDetails extends LightningElement {
         this.dispatchEvent(new CustomEvent('back'));
     }
 
-    handleDebug() {
-        console.log('rewardsevent id ' + this.rewardsevent.Id);
-        console.log('rewardsevent id ' + this.rewardsevent.Type__c);
-    }
-
 }

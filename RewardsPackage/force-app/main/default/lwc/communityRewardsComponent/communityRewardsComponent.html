@@ -21,17 +21,32 @@
                             </lightning-icon>
                             <span class="slds-assistive-text">Close</span>
                         </button>
-                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">{modalHeader}</h2>
+                        <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate"><span style={themeStyle}>{modalHeader}</span></h2>
                     </header>
                     <!-- MODAL BODY -->
                     <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
-                        <p>{modalBody}</p>
+                        <p class="slds-text-heading_small slds-m-around_small">
+                            <template if:true={isModalRedeem}>
+                                Would like to redeem {description} for <lightning-formatted-number value={points}></lightning-formatted-number> points?
+                            </template>
+                            <template if:true={isModalRedeemIneligible}>
+                                <lightning-formatted-number value={pointsToIneligibleReward}></lightning-formatted-number> more points needed for {description}.
+                            </template>
+                        </p>
+                        <lightning-accordion allow-multiple-sections-open
+                            active-section-name="Details">
+                            <lightning-accordion-section name="Details" label="Reward Details">
+                                <p><lightning-formatted-rich-text
+                                    value={rewardDetails}
+                                ></lightning-formatted-rich-text></p>
+                            </lightning-accordion-section>
+                        </lightning-accordion>
                     </div>
                     <!-- MODAL FOOTER -->
                     <footer class="slds-modal__footer">
                         <template if:true={isModalRedeem}>
                             <button class="slds-button slds-button_neutral" onclick={closeModal} title="Cancel">Cancel</button>
-                            <button class="slds-button slds-button_brand" onclick={closeRedeemModal} title="Redeem">Confirm</button>
+                            <button class="slds-button slds-button_brand" onclick={closeRedeemModal} title="Redeem">Redeem {description}</button>
                         </template>
                         <template if:true={isModalRedeemIneligible}>
                             <button class="slds-button slds-button_neutral" onclick={closeModal} title="Cancel">Cancel</button>
@@ -60,20 +75,22 @@
                                             <img src={reward.Image_URL__c} 
                                                 onclick={handleRewardSelection} 
                                                 data-recordid={reward.Id}
+                                                data-details={reward.Details__c}
                                                 data-points={reward.Cost__c}
                                                 data-description={reward.Name}
                                                 class="reward-tile eligible"
                                             />
-                                            <div class="reward-tile-text"
-                                                onclick={handleRewardSelection} 
+                                            <div onclick={handleRewardSelection} 
                                                 data-recordid={reward.Id}
+                                                data-details={reward.Details__c}
                                                 data-points={reward.Cost__c}
                                                 data-description={reward.Name}
+                                                class="reward-tile-text"
                                             >
                                             {reward.Name}<br />
                                             Cost:&nbsp;
                                             <lightning-formatted-number value={reward.Cost__c} maximum-fraction-digits="0"></lightning-formatted-number>
-                                            &nbsp;pts
+                                            &nbsp;pts<br />
                                             </div>
                                         </div>
                                     </lightning-layout-item>
@@ -92,15 +109,17 @@
                                             <img src={ineligibleReward.Image_URL__c}
                                                 onclick={handleIneligibleRewardSelection}
                                                 data-recordid={ineligibleReward.Id}
+                                                data-details={ineligibleReward.Details__c}
                                                 data-points={ineligibleReward.Cost__c}
                                                 data-description={ineligibleReward.Name}
                                                 class="reward-tile ineligible"
                                             />
-                                            <div class="reward-tile-text"
-                                                onclick={handleIneligibleRewardSelection}
+                                            <div onclick={handleIneligibleRewardSelection}
                                                 data-recordid={ineligibleReward.Id}
+                                                data-details={ineligibleReward.Details__c}
                                                 data-points={ineligibleReward.Cost__c}
                                                 data-description={ineligibleReward.Name}
+                                                class="reward-tile-text"
                                             >
                                             {ineligibleReward.Name}
                                             <br />
@@ -141,7 +160,6 @@
                                 </lightning-layout-item>
                             </lightning-layout>
                         </template>
-
                         <template if:true={showPointsDetail}>
                             <c-community-rewards-event-details 
                                 rewardsevent={selectedRewardsEvent}

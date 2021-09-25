@@ -98,21 +98,26 @@ tr:nth-child(even) {
 
 .reward-tile-container:hover > .eligible { 
     border-radius: 5%;
+    /*
     -webkit-transform: rotate(360deg);
        -moz-transform: rotate(360deg);
          -o-transform: rotate(360deg);
         -ms-transform: rotate(360deg);
             transform: rotate(360deg);
+            */
     filter: brightness(95%);
+    
 }
 
 .reward-tile-container:hover > .ineligible { 
     border-radius: 5%;
+    /*
     -webkit-transform: rotate(360deg);
        -moz-transform: rotate(360deg);
          -o-transform: rotate(360deg);
         -ms-transform: rotate(360deg);
             transform: rotate(360deg);
+            */
     filter: brightness(25%);
 }
 
@@ -127,4 +132,26 @@ tr:nth-child(even) {
     left: 50%;
     transform: translate(-50%, -50%);
     font-size: large;
+}
+
+.wrap {
+    overflow-x:hidden;
+}
+.slideInRight {
+    animation-name: slideInRight;
+}
+.animated {
+    animation-duration: 1s;
+    animation-fill-mode: both;
+}
+  
+@keyframes slideInRight {
+    from {
+        transform: translate3d(100%, 0, 0);
+        visibility: visible;
+    }
+  
+    to {
+        transform: translate3d(0, 0, 0);
+    }
 }
