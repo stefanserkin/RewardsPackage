@@ -13,7 +13,7 @@ public with sharing class CommunityRewardsController {
                  LIMIT 200];
     }
 
-    @AuraEnabled(cacheable = true)
+    @AuraEnabled(cacheable=true)
     public static List<Reward__c> getEligibleRewards(Id rewardsProgramId, Decimal accountPoints) {
         return [SELECT Id, Name, Cost__c, Image_URL__c, Relative_URL__c, Details__c, Redemption_Instructions__c
                   FROM Reward__c 
@@ -27,7 +27,7 @@ public with sharing class CommunityRewardsController {
                  LIMIT 200];
     }
 
-    @AuraEnabled(cacheable = true)
+    @AuraEnabled(cacheable=true)
     public static List<Reward__c> getIneligibleRewards(Id rewardsProgramId, Decimal accountPoints) {
         return [SELECT Id, Name, Cost__c, Image_URL__c, Relative_URL__c, Details__c, Redemption_Instructions__c
                   FROM Reward__c 
@@ -55,7 +55,7 @@ public with sharing class CommunityRewardsController {
                ];
     }
 
-    @AuraEnabled(cacheable = true)
+    @AuraEnabled(cacheable=true)
     public static List<Rewards_Event__c> getExpiredRewardsEvents(Id recordId) {
         return [SELECT Id, Name, Type__c, Date__c, Description__c, Points__c, Points_Balance__c, Points_Expired__c, Points_Used__c,
                        Expiration_Date__c, Points_Earned__c, Points_Spent__c, Points_Remaining__c, Expired__c, Reward__c, Status__c, 
@@ -70,7 +70,7 @@ public with sharing class CommunityRewardsController {
                ];
     }
 
-    @AuraEnabled(cacheable = true)
+    @AuraEnabled(cacheable=true)
     public static Rewards_Account__c getRewardsAccount(Id contactId, Id rewardsProgramId) {
         return [SELECT Id, Points_Total__c, Status__c
                   FROM Rewards_Account__c
