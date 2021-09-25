@@ -283,6 +283,7 @@ export default class CommunityRewardsComponent extends LightningElement {
         this.description = rewardData.description;
         this.modalHeader = 'Redeem Reward';
         this.isModalRedeem = true;
+        this.isModalRedeemIneligible = false;
         this.isModalOpen = true;
     }
 
@@ -293,7 +294,7 @@ export default class CommunityRewardsComponent extends LightningElement {
         this.rewardDetails = event.target.dataset.details;
 
         this.modalHeader = 'Not enough points...';
-        this.modalBody = `${this.pointsToIneligibleReward} more points are needed to unlock ${this.description}.`;
+        this.isModalRedeem = false;
         this.isModalRedeemIneligible = true;
         this.isModalOpen = true;
     }
