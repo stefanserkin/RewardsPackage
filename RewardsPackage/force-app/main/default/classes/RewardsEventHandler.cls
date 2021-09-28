@@ -65,6 +65,9 @@ public with sharing class RewardsEventHandler {
         setRecordTypeIds();
 
         Date expirationDate;
+        if (daysUntilExpiration != null) {
+            expirationDate = Date.today().addDays(Integer.valueOf(daysUntilExpiration));
+        }
         List<Rewards_Account__c> lstRewardsAccounts = RewardsAccountHandler.getRewardsAccountList(
             contactId, rewardsProgramId
         );
@@ -93,7 +96,7 @@ public with sharing class RewardsEventHandler {
             re.Expiration_Date__c = getExpirationDateForRewardsEvent(
                 rewardsAccount, 
                 re, 
-                Date.today().addDays(Integer.valueOf(daysUntilExpiration))
+                expirationDate
             );
         }
         re.Date__c                 = Datetime.now();
@@ -316,6 +319,9 @@ public with sharing class RewardsEventHandler {
     ) {
         if (String.isBlank(re.Description__c)) {
             re.Description__c = mapRewards.get(re.Reward__c)?.Name;
+        }
+        if (re.Points__c == null) {
+            re.Points__c = mapRewards.get(re.Reward__c)?.Cost__c;
         }
     }
 
