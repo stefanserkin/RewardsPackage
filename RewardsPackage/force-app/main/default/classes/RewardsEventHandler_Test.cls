@@ -101,5 +101,47 @@ public with sharing class RewardsEventHandler_Test {
         System.assertEquals(expectedPointsTotal, raToVerify.Points_Total__c, 'Unexpected points total');
     }
 
+    @isTest
+    static void testInsertAwardOutOfOrder() {
+        List<Program_Reward__c> lstPRs  = RewardsTestDataFactory.createPerpetualProgramWithRewards(1);
+        List<Contact> lstContacts       = RewardsTestDataFactory.createContacts(1, 1);
+        List<Rewards_Account__c> lstRAs = RewardsTestDataFactory.createRewardsAccounts(lstContacts, lstPRs[0].Rewards_Program__c);
+
+        Id awardRecTypeId = RewardsTestDataFactory.getRecordTypeId('Rewards_Event__c', 'Award');
+        List<Rewards_Event__c> reList = new List<Rewards_Event__c>();
+        reList.add( new Rewards_Event__c(Rewards_Account__c = lstRAs.get(0).Id, Points__c = 100, RecordTypeId = awardRecTypeId, Description__c = 'Test Points Now') );
+        reList.add( new Rewards_Event__c(Rewards_Account__c = lstRAs.get(0).Id, Points__c = 100, RecordTypeId = awardRecTypeId, Description__c = 'Test Points Now') );
+        insert reList;
+
+        Rewards_Event__c re = new Rewards_Event__c(
+            Rewards_Account__c = lstRAs.get(0).Id, 
+            Points__c          = 100, 
+            RecordTypeId       = awardRecTypeId, 
+            Description__c     = 'Test Points Yesterday', 
+            Date__c            = Datetime.now().addDays(-1)
+        );
+
+        Test.startTest();
+        Database.SaveResult sr = Database.insert(re, false);
+        Test.stopTest();
+
+        System.assert(sr.isSuccess(), 'Failed to insert rewards event');
+
+        Rewards_Account__c raToVerify = [SELECT Id, 
+                                                Points_Total__c, 
+                                                (SELECT Id, Description__c, Points__c 
+                                                   FROM Rewards_Events__r 
+                                                  ORDER BY Date__c ASC) 
+                                           FROM Rewards_Account__c 
+                                          WHERE Id = :re.Rewards_Account__c 
+                                          LIMIT 1];
+
+        Rewards_Event__c oldestEvent = raToVerify.Rewards_Events__r.get(0);
+
+        System.assertEquals(300, raToVerify.Points_Total__c, 'Unexpected points total');
+        System.assertEquals('Test Points Yesterday', oldestEvent.Description__c, 'Oldest event unexpected');
+
+    }
+
     
 }

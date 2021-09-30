@@ -2,7 +2,7 @@ trigger RewardsAccountTrigger on Rewards_Account__c (before insert, before updat
 
     if (Trigger.isBefore) {
         if (Trigger.isInsert || Trigger.isUpdate) {
-            RewardsAccountHandler.setRewardsAccountDefaults(Trigger.new);
+            RewardsAccountHandler.handleTriggerEvent(Trigger.new);
         }
     }
 

@@ -310,6 +310,15 @@ public with sharing class RewardsEventHandler {
         ) {
             re.Expiration_Date__c = getExpirationDateForRewardsEvent(ra, re, re.Expiration_Date__c);
         }
+        if (re.Points__c == null) {
+            re.Points__c = 0;
+        }
+        if (re.Points_Used__c == null) {
+            re.Points_Used__c = 0;
+        }
+        if (re.Points_Expired__c == null) {
+            re.Points_Expired__c = 0;
+        }
     }
 
     private static void setEmptyRedemptionFields(
