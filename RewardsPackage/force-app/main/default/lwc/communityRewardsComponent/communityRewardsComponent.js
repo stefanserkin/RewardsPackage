@@ -405,6 +405,7 @@ export default class CommunityRewardsComponent extends LightningElement {
                 refreshApex(this.wiredRewardsEventList);
                 refreshApex(this.wiredRewardsResult);
                 refreshApex(this.wiredIneligibleRewardsResult);
+                this.accountIsActive = true;
                 this.activeTab = '1';
                 this.isLoading = false;
             })
