@@ -1,12 +1,23 @@
 <!-- sldsValidatorIgnore -->
 <template>
-    <lightning-card>
+    <!-- SPINNER ON LOAD -->
+    <lightning-spinner if:true={isLoading} alternative-text="Loading" variant="brand" size="large"></lightning-spinner>
+    <!-- ACTIVATE ACCOUNT -->
+    <template if:false={isLoading}>
+        <lightning-card if:false={accountIsActive}>
+            <h1 slot="title"><span style={themeStyle}>YOU'VE EARNED IT!</span></h1>
+            <p class="slds-m-around_medium">You’re dedicated to staying fit at the JCCSF. With JCCSF Perks, your hard work and loyalty pay off in exclusive rewards, like personal training, spa packages, Pilates sessions or parking, to name just a few.</p>
+            <p class="slds-m-around_medium">You earn 250 points just by joining the JCCSF Perks program and you keep accruing them by coming to the gym and checking in with your Membership ID card. The more you use the JCCSF Fitness Center and programs, the more points you accumulate.</p>
+            <p class="slds-m-around_medium">It’s free, quick and easy to sign up. Every check-in earns you points.</p>
+            <lightning-button variant="brand-outline" label="GET STARTED RIGHT NOW!" title="Activate Account" onclick={activateAccount} class="slds-m-left_x-small activate-button"></lightning-button>
+        </lightning-card>
+    </template>
+    <!-- ACTIVE IS ACTIVE -->
+    <lightning-card if:true={accountIsActive}>
         <h1 slot="title"><span style={themeStyle}>{componentTitle}</span></h1>
         <div slot="actions" class="total-points-box">Points Total:&nbsp; 
             <lightning-formatted-number value={accPoints}></lightning-formatted-number>
         </div>
-        <!-- SPINNER ON LOAD -->
-        <lightning-spinner if:true={isLoading} alternative-text="Loading" variant="brand" size="large"></lightning-spinner>
         <!-- MODAL -->
         <template if:true={isModalOpen}>
             <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
@@ -27,7 +38,7 @@
                     <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
                         <p class="slds-text-heading_small slds-m-around_small">
                             <template if:true={isModalRedeem}>
-                                Would like to redeem {description} for <lightning-formatted-number value={points}></lightning-formatted-number> points?
+                                Would you like to redeem {description} for <lightning-formatted-number value={points}></lightning-formatted-number> points?
                             </template>
                             <template if:true={isModalRedeemIneligible}>
                                 <lightning-formatted-number value={pointsToIneligibleReward}></lightning-formatted-number> more points needed for {description}.
@@ -70,7 +81,7 @@
                         <div class="slds-var-m-around_medium lgc-bg">
                             <lightning-layout multiple-rows=true>
                                 <template for:each={rewards} for:item="reward">
-                                    <lightning-layout-item key={reward.Id} class="slds-has-dividers_bottom-space slds-size_1-of-3">
+                                    <lightning-layout-item key={reward.Id} class="slds-has-dividers_bottom-space slds-size_1-of-4">
                                         <div class="reward-tile-container">
                                             <img src={reward.Image_URL__c} 
                                                 onclick={handleRewardSelection} 
@@ -104,7 +115,7 @@
                             </div>
                             <lightning-layout multiple-rows=true>
                                 <template for:each={ineligibleRewards} for:item="ineligibleReward">
-                                    <lightning-layout-item key={ineligibleReward.Id} class="slds-has-dividers_bottom-space slds-size_1-of-3">
+                                    <lightning-layout-item key={ineligibleReward.Id} class="slds-has-dividers_bottom-space slds-size_1-of-4">
                                         <div class="reward-tile-container">
                                             <img src={ineligibleReward.Image_URL__c}
                                                 onclick={handleIneligibleRewardSelection}

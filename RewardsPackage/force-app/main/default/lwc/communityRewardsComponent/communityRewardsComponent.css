@@ -76,7 +76,7 @@ tr:nth-child(even) {
 }
 
 .eligible {
-    filter: brightness(75%) grayscale(1);
+    filter: brightness(55%) grayscale(1);
     -webkit-transition: all 0.5s ease;
        -moz-transition: all 0.5s ease;
          -o-transition: all 0.5s ease;
@@ -85,7 +85,7 @@ tr:nth-child(even) {
 }
 
 .ineligible {
-    filter: brightness(65%) grayscale(1);
+    filter: brightness(55%) grayscale(1);
     -webkit-transition: all 0.5s ease;
        -moz-transition: all 0.5s ease;
          -o-transition: all 0.5s ease;
@@ -102,8 +102,8 @@ tr:nth-child(even) {
 }
 
 .reward-tile {
-    width: 300px;
-    height: 300px;
+    width: 200px;
+    height: 200px;
 }
 
 .reward-tile-text {
@@ -112,4 +112,10 @@ tr:nth-child(even) {
     left: 50%;
     transform: translate(-50%, -50%);
     font-size: large;
+}
+
+.activate-button {
+    --sds-c-button-outline-brand-color-border: #03783D;
+    --sds-c-button-outline-brand-color-border-hover: #A72124;
+    --sds-c-button-outline-brand-color-background-hover: white;
 }
