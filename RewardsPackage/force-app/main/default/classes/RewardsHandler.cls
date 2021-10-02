@@ -27,7 +27,11 @@ public with sharing class RewardsHandler {
     }
 
     private static Map<Id, Reward__c> queryForMap(Set<Id> setRewardIds) {
-        Map<Id, Reward__c> mapRewards = new Map<Id, Reward__c>([SELECT Id, Name FROM Reward__c WHERE Id IN :setRewardIds]);
+        Map<Id, Reward__c> mapRewards = new Map<Id, Reward__c>([
+            SELECT Id, Name, Cost__c 
+              FROM Reward__c 
+             WHERE Id IN :setRewardIds
+        ]);
         return mapRewards;
     }
     

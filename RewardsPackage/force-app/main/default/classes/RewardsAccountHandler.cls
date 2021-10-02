@@ -67,8 +67,8 @@ public with sharing class RewardsAccountHandler {
         Rewards_Program__c rp,
         Contact ct
     ) {
-        String strName = 'ct.FirstName' + '\'s ' + rp.Name;
-        strName += rp.Name.right(7) == 'Rewards' ? 'Account' : 'Rewards';
+        String strName = ct.FirstName + '\'s ' + rp.Name;
+        strName += rp.Name.right(7) == 'Rewards' ? ' Account' : ' Rewards';
         ra.Name = strName;
     }
 

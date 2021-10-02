@@ -191,7 +191,6 @@ public with sharing class RewardsEventHandler {
         Map<Id, Reward__c> mapRewards
     ) {
         for (Rewards_Account__c ra : mapRewardsAccsToSortedEvents.keySet()) {
-            
             Decimal raStartingPointsTotal = ra.Points_Total__c != null ? ra.Points_Total__c : 0;
             Decimal runningPointsTotal    = 0;
             
@@ -204,7 +203,12 @@ public with sharing class RewardsEventHandler {
                     }
                 }
                 if (re.Points__c != 0) {
-                    runningPointsTotal = addToPointsTotal(runningPointsTotal, re, mapRewardsAccountsWithEvents);
+                    runningPointsTotal = addToPointsTotal(
+                        runningPointsTotal, 
+                        re, 
+                        mapRewardsAccountsWithEvents,
+                        mapRewards
+                    );
                 }
             }
             // Only update accounts if total value has changed
@@ -228,7 +232,8 @@ public with sharing class RewardsEventHandler {
     private static Decimal addToPointsTotal(
         Decimal pointsTotal, 
         Rewards_Event__c re,
-        Map<Id, Rewards_Account__c> mapRewardsAccounts
+        Map<Id, Rewards_Account__c> mapRewardsAccounts,
+        Map<Id, Reward__c> mapRewards
     ) {
         setRecordTypeIds();
 
@@ -329,7 +334,7 @@ public with sharing class RewardsEventHandler {
         if (String.isBlank(re.Description__c)) {
             re.Description__c = mapRewards.get(re.Reward__c)?.Name;
         }
-        if (re.Points__c == null) {
+        if (re.Points__c == null || re.Points__c == 0) {
             re.Points__c = mapRewards.get(re.Reward__c)?.Cost__c;
         }
     }

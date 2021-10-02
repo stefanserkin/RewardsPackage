@@ -1,0 +1,71 @@
+<template>
+    <!-- MODAL -->
+    <template if:true={isModalOpen}>
+        <section role="dialog" tabindex="-1" aria-labelledby="modal-heading-01" aria-modal="true" aria-describedby="modal-content-id-1" class="slds-modal slds-fade-in-open">
+            <div class="slds-modal__container">
+                <!-- MODAL HEADER -->
+                <header class="slds-modal__header">
+                    <button class="slds-button slds-button_icon slds-modal__close slds-button_icon-inverse" title="Close" onclick={closeModal}>
+                        <lightning-icon icon-name="utility:close"
+                            alternative-text="close"
+                            variant="inverse"
+                            size="small" >
+                        </lightning-icon>
+                        <span class="slds-assistive-text">Close</span>
+                    </button>
+                    <h2 id="modal-heading-01" class="slds-text-heading_medium slds-hyphenate">{modalHeader}</h2>
+                </header>
+                <!-- MODAL BODY -->
+                <div class="slds-modal__content slds-p-around_medium" id="modal-content-id-1">
+                    <template if:true={selectedReward}>
+                        <p>Are you sure you would like to redeem {description} for <lightning-formatted-number value={points}></lightning-formatted-number> points?</p>
+                        <h2 class="slds-m-around_medium"><span style={themeStyle}>Details</span></h2>
+                        <p><lightning-formatted-rich-text
+                            value={rewardDetails}
+                        ></lightning-formatted-rich-text></p>
+                    </template>
+                </div>
+                <!-- MODAL FOOTER -->
+                <footer class="slds-modal__footer">
+                    <button class="slds-button slds-button_neutral" onclick={closeModal} title="Cancel">Cancel</button>
+                </footer>
+            </div>
+        </section>
+        <div class="slds-backdrop slds-backdrop_open"></div>
+    </template>
+    <!-- REWARDS DATA -->
+    <lightning-card title="Rewards">
+        <div class="slds-m-bottom_medium slds-m-left_medium">
+            <h2>Redeem Rewards</h2>
+        </div>
+        <div class="slds-var-m-around_medium lgc-bg">
+            <lightning-layout multiple-rows=true>
+                <template for:each={rewards} for:item="reward">
+                    <lightning-layout-item key={reward.Id} class="slds-has-dividers_bottom-space slds-size_1-of-3">
+                        <div class="reward-tile-container">
+                            <img src={reward.Image_URL__c} 
+                                onclick={handleRewardSelection}
+                                data-recordid={reward.Id}
+                                data-details={reward.Details__c}
+                                data-points={reward.Cost__c}
+                                data-description={reward.Name}
+                                class="reward-tile eligible"
+                            />
+                            <div class="reward-tile-text"
+                                onclick={handleRewardSelection} 
+                                data-recordid={reward.Id}
+                                data-points={reward.Cost__c}
+                                data-description={reward.Name}
+                            >
+                            {reward.Name}<br />
+                            Cost:&nbsp;
+                            <lightning-formatted-number value={reward.Cost__c} maximum-fraction-digits="0"></lightning-formatted-number>
+                            &nbsp;pts<br />
+                            </div>
+                        </div>
+                    </lightning-layout-item>
+                </template>
+            </lightning-layout>
+        </div>
+    </lightning-card>
+</template>

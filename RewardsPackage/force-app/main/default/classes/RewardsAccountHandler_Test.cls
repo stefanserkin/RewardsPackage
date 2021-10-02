@@ -38,7 +38,7 @@ public with sharing class RewardsAccountHandler_Test {
         List<Program_Reward__c> lstProgramRewards = new List<Program_Reward__c>();
         Boolean assignToCurrentProgram = true;
         for (Reward__c reward : lstRewards) {
-            String rewardsProgramId = assignToCurrentProgram ? rp2.Id : rp3.Id;
+            String rewardsProgramId = assignToCurrentProgram ? rp.Id : rp3.Id;
             lstProgramRewards.add(
                 new Program_Reward__c(Reward__c=reward.Id, Rewards_Program__c=rewardsProgramId)
             );
@@ -115,6 +115,218 @@ public with sharing class RewardsAccountHandler_Test {
 
         System.assertEquals(raList.size(), rasToVerify.size(), 'Query results were different than input');
         
+    }
+
+    @isTest
+    static void testRewardsAccountQueryByListOfRes() {
+        Rewards_Account__c ra = [SELECT Id,
+                                        (SELECT Id, Rewards_Account__c
+                                            FROM Rewards_Events__r) 
+                                   FROM Rewards_Account__c
+                                  WHERE Points_Total__c > 0
+                                  LIMIT 1];
+        
+        Map<Id, Rewards_Event__c> mapRewardsEvents = new Map<Id, Rewards_Event__c>();
+        for (Rewards_Event__c re : ra.Rewards_Events__r) {
+            mapRewardsEvents.put(re.Id, re);
+        }
+                                  
+        Map<Id, Rewards_Account__c> rasToVerify;
+
+        Test.startTest();
+        rasToVerify = RewardsAccountHandler.getRewardsAccountMap(mapRewardsEvents.values());
+        Test.stopTest();
+
+        System.assertEquals(ra.Id, rasToVerify.get(ra.Id).Id, 'Query results were unexpected');
+        
+    }
+
+    @isTest
+    static void testRewardsAccountQueryByMapOfRes() {
+        Rewards_Account__c ra = [SELECT Id,
+                                        (SELECT Id, Rewards_Account__c
+                                            FROM Rewards_Events__r) 
+                                   FROM Rewards_Account__c
+                                  WHERE Points_Total__c > 0
+                                  LIMIT 1];
+        
+        Map<Id, Rewards_Event__c> mapRewardsEvents = new Map<Id, Rewards_Event__c>();
+        for (Rewards_Event__c re : ra.Rewards_Events__r) {
+            mapRewardsEvents.put(re.Id, re);
+        }
+                                  
+        Map<Id, Rewards_Account__c> rasToVerify;
+
+        Test.startTest();
+        rasToVerify = RewardsAccountHandler.getRewardsAccountMap(mapRewardsEvents);
+        Test.stopTest();
+
+        System.assertEquals(ra.Id, rasToVerify.get(ra.Id).Id, 'Query results were unexpected');
+        
+    }
+
+    @isTest
+    static void testReturnExistingRAsOnRequest() {
+        List<Rewards_Account__c> raList = [SELECT Id,
+                                                  (SELECT Id, Rewards_Account__c
+                                                     FROM Rewards_Events__r) 
+                                             FROM Rewards_Account__c
+                                            WHERE Points_Total__c > 0];
+
+        Set<Id> setRewardsAccountIds = new Set<Id>();
+        for (Rewards_Account__c ra : raList) {
+            setRewardsAccountIds.add(ra.Id);
+        }
+
+        Map<Id, Rewards_Event__c> mapRewardsEvents = new Map<Id, Rewards_Event__c>();
+        for (Rewards_Account__c ra : raList) {
+            for (Rewards_Event__c re : ra.Rewards_Events__r) {
+                mapRewardsEvents.put(re.Id, re);
+            }
+        }
+
+        Map<Id, Rewards_Account__c> raList1;
+        Map<Id, Rewards_Account__c> raList2;
+        Map<Id, Rewards_Account__c> raList3;
+        Map<Id, Rewards_Account__c> raList4;
+
+        raList1 = RewardsAccountHandler.getRewardsAccountMap(setRewardsAccountIds);
+
+        Test.startTest();
+        raList2 = RewardsAccountHandler.getRewardsAccountMap(setRewardsAccountIds);
+        raList3 = RewardsAccountHandler.getRewardsAccountMap(mapRewardsEvents.values());
+        raList4 = RewardsAccountHandler.getRewardsAccountMap(mapRewardsEvents);
+        Test.stopTest();
+
+        System.assertEquals(raList.size(), raList4.size(), 'Query results were different than input');
+        
+    }
+
+    @isTest
+    static void testRewardsAccountWithEventsQuery() {
+        List<Rewards_Account__c> raList = [SELECT Id FROM Rewards_Account__c];
+
+        Set<Id> setRewardsAccountIds = new Set<Id>();
+        for (Rewards_Account__c ra : raList) {
+            setRewardsAccountIds.add(ra.Id);
+        }
+
+        Map<Id, Rewards_Account__c> rasToVerify;
+        Map<Id, Rewards_Account__c> rasToRequery;
+
+        Test.startTest();
+        rasToVerify  = RewardsAccountHandler.getRewardsAccountWithEventsMap(setRewardsAccountIds);
+        rasToRequery = RewardsAccountHandler.getRewardsAccountWithEventsMap(setRewardsAccountIds);
+        rasToRequery = RewardsAccountHandler.getRewardsAccountWithEventsMap(setRewardsAccountIds, false);
+        rasToRequery = RewardsAccountHandler.getRewardsAccountWithEventsMap(setRewardsAccountIds, true);
+        Test.stopTest();
+
+        System.assertEquals(raList.size(), rasToVerify.size(), 'Query results were different than input');
+        
+    }
+
+    @isTest
+    static void testRAsWithEventsQueryByListOfRes() {
+        Rewards_Account__c ra = [SELECT Id,
+                                        (SELECT Id, Rewards_Account__c
+                                            FROM Rewards_Events__r) 
+                                   FROM Rewards_Account__c
+                                  WHERE Points_Total__c > 0
+                                  LIMIT 1];
+        
+        Map<Id, Rewards_Event__c> mapRewardsEvents = new Map<Id, Rewards_Event__c>();
+        for (Rewards_Event__c re : ra.Rewards_Events__r) {
+            mapRewardsEvents.put(re.Id, re);
+        }
+                                  
+        Map<Id, Rewards_Account__c> rasToVerify;
+        Map<Id, Rewards_Account__c> rasToRequery;
+
+        Test.startTest();
+        rasToVerify  = RewardsAccountHandler.getRewardsAccountWithEventsMap(mapRewardsEvents.values());
+        rasToRequery = RewardsAccountHandler.getRewardsAccountWithEventsMap(mapRewardsEvents.values(), false);
+        Test.stopTest();
+
+        System.assertEquals(ra.Id, rasToVerify.get(ra.Id).Id, 'Query results were unexpected');
+        System.assertEquals(1, rasToVerify.size(), 'Query result size was unexpected');
+    }
+
+    @isTest
+    static void testGetRewardsAccountList() {
+        Rewards_Account__c ra = [SELECT Id, Contact__c, Rewards_Program__c FROM Rewards_Account__c LIMIT 1];
+
+        List<Rewards_Account__c> rasToVerify;
+
+        Test.startTest();
+        rasToVerify = RewardsAccountHandler.getRewardsAccountList(ra.Contact__c, ra.Rewards_Program__c);
+        Test.stopTest();
+
+        System.assertEquals(1, rasToVerify.size(), 'Query result size was unexpected');
+        System.assertEquals(ra.Id, rasToVerify.get(0).Id, 'Query results were unexpected');
+    }
+
+    @isTest
+    static void testGetActiveAwardsForRedemptions() {
+        Rewards_Account__c ra = [SELECT Id, Contact__c, Rewards_Program__c 
+                                   FROM Rewards_Account__c 
+                                  WHERE Points_Total__c > 0
+                                  LIMIT 1];
+        Rewards_Program__c rp = [SELECT Id, 
+                                        (SELECT Id, Reward__c, Cost__c
+                                           FROM Program_Rewards__r)
+                                   FROM Rewards_Program__c
+                                  WHERE Id = :ra.Rewards_Program__c
+                                  LIMIT 1];
+
+        insert new Rewards_Event__c(
+            Rewards_Account__c    = ra.Id,
+            Description__c        = 'Test Points to Cover',
+            Points__c             = 100000,
+            Rewards_Program_ID__c = ra.Rewards_Program__c,
+            Status__c             = 'Active',
+            Date__c               = Datetime.now()
+        );
+
+        Id redemptionRecTypeId = Schema.SObjectType.Rewards_Event__c
+            .getRecordTypeInfosByDeveloperName().get('Redemption').getRecordTypeId();
+        Rewards_Event__c redemption = new Rewards_Event__c(
+            Rewards_Account__c    = ra.Id,
+            Rewards_Program_ID__c = ra.Rewards_Program__c,
+            Reward__c             = rp.Program_Rewards__r.get(0).Reward__c,
+            Points__c             = rp.Program_Rewards__r.get(0).Cost__c,
+            RecordTypeId          = redemptionRecTypeId
+        );
+
+        
+        Database.SaveResult sr = Database.insert(redemption);
+        System.assert(sr.isSuccess(), 'Could not insert redemption');
+
+        Map<Id, Rewards_Event__c> mapRedemptionEvents = new Map<Id, Rewards_Event__c>();
+        mapRedemptionEvents.put(redemption.Id, redemption);
+
+        Test.startTest();
+        Map<Id, Rewards_Account__c> mapRewardsAccountsToVerify;
+        mapRewardsAccountsToVerify = RewardsAccountHandler.getActiveAwardsForRedemptions(mapRedemptionEvents);
+        Test.stopTest();
+
+        Boolean gotRewardsEvents = !mapRewardsAccountsToVerify.isEmpty();
+        System.assert(gotRewardsEvents, 'Did not return any rewards event awards');
+    }
+
+    @isTest
+    static void testInsertRAWithEmptyStatus() {
+        Contact ct            = [SELECT Id FROM Contact LIMIT 1];
+        Rewards_Program__c rp = [SELECT Id, Status__c FROM Rewards_Program__c LIMIT 1];
+
+        Rewards_Account__c ra = new Rewards_Account__c(
+            Contact__c=ct.Id, 
+            Rewards_Program__c=rp.Id, 
+            Points_Total__c=0
+        );
+        insert ra;
+
+        Rewards_Account__c raToVerify = [SELECT Id, Status__c FROM Rewards_Account__c WHERE Id = :ra.Id LIMIT 1];
+        System.assertEquals(rp.Status__c, raToVerify.Status__c, 'Rewards Account status was unexpected');
     }
 
 }

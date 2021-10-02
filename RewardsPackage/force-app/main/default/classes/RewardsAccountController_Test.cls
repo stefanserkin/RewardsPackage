@@ -26,7 +26,7 @@ private class RewardsAccountController_Test {
         List<Program_Reward__c> lstProgramRewards = new List<Program_Reward__c>();
         Boolean assignToCurrentProgram = true;
         for (Reward__c reward : lstRewards) {
-            String rewardsProgramId = assignToCurrentProgram ? rp2.Id : rp3.Id;
+            String rewardsProgramId = assignToCurrentProgram ? rp.Id : rp3.Id;
             lstProgramRewards.add(
                 new Program_Reward__c(Reward__c=reward.Id, Rewards_Program__c=rewardsProgramId)
             );
@@ -76,5 +76,54 @@ private class RewardsAccountController_Test {
         System.assertEquals(1, rasToVerify.Rewards_Events__r.get(0).Points_Balance__c, 'Reordering unexpected');
 
     }
+
+    @isTest
+    static void testRecalculateRAWithRedemptions() {
+
+        Rewards_Account__c ra = [SELECT Id, Rewards_Program__c FROM Rewards_Account__c WHERE Points_Total__c > 0 LIMIT 1];
+        Rewards_Program__c rp = [SELECT Id, 
+                                        (SELECT Id, Reward__c, Cost__c
+                                           FROM Program_Rewards__r)
+                                   FROM Rewards_Program__c
+                                  WHERE Id = :ra.Rewards_Program__c
+                                  LIMIT 1];
+        
+        insert new Rewards_Event__c(
+            Rewards_Account__c    = ra.Id,
+            Description__c        = 'Test Points to Cover',
+            Points__c             = 100000,
+            Rewards_Program_ID__c = ra.Rewards_Program__c,
+            Status__c             = 'Active',
+            Date__c               = Datetime.now()
+        );
+
+        Id redemptionRecTypeId = Schema.SObjectType.Rewards_Event__c
+            .getRecordTypeInfosByDeveloperName().get('Redemption').getRecordTypeId();
+        Rewards_Event__c redemption = new Rewards_Event__c(
+            Rewards_Account__c    = ra.Id,
+            Rewards_Program_ID__c = ra.Rewards_Program__c,
+            Reward__c             = rp.Program_Rewards__r.get(0).Reward__c,
+            Points__c             = rp.Program_Rewards__r.get(0).Cost__c,
+            RecordTypeId          = redemptionRecTypeId
+        );
+        insert redemption;
+        
+        Test.startTest();
+        RewardsAccountController.recalculateRewardsAccount(ra.Id);
+        Test.stopTest();
+
+        Rewards_Account__c rasToVerify = [SELECT Id, 
+                                                 (SELECT Id, Description__c, 
+                                                         Points__c, Points_Balance__c 
+                                                    FROM Rewards_Events__r 
+                                                   ORDER BY Date__c ASC) 
+                                            FROM Rewards_Account__c 
+                                           WHERE Points_Total__c > 0 
+                                           LIMIT 1];
+
+        System.assertEquals(1, rasToVerify.Rewards_Events__r.get(0).Points_Balance__c, 'Reordering unexpected');
+
+    }
+
 
 }
