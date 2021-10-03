@@ -3,6 +3,8 @@ public class RewardsTestDataFactory {
 
     private static Id rpPerpetualRecTypeId = Schema.SObjectType.Rewards_Program__c.getRecordTypeInfosByDeveloperName().get('Perpetual').getRecordTypeId();
     private static Id rpLimitedRecTypeId   = Schema.SObjectType.Rewards_Program__c.getRecordTypeInfosByDeveloperName().get('Limited_Duration').getRecordTypeId();
+    private static Id awardRecTypeId       = Schema.SObjectType.Rewards_Event__c.getRecordTypeInfosByDeveloperName().get('Award').getRecordTypeId();
+    private static Id redemptionRecTypeId  = Schema.SObjectType.Rewards_Event__c.getRecordTypeInfosByDeveloperName().get('Redemption').getRecordTypeId();
 
     public static List<Program_Reward__c> createPerpetualProgramWithRewards(
         Integer numRewards
@@ -92,7 +94,59 @@ public class RewardsTestDataFactory {
         insert lstRewardsAccounts;
         return lstRewardsAccounts;
     }
-    
+
+
+
+    public static Rewards_Account__c createRewardsEventsForRA(
+        Rewards_Account__c ra, Integer numAwards, Integer numRedemptions
+    ) {
+        Program_Reward__c pr = [SELECT Id, Reward__c, Reward__r.Cost__c FROM Program_Reward__c WHERE Rewards_Program__c = :ra.Rewards_Program__c LIMIT 1];
+        Id rewardId = pr.Reward__c;
+        Decimal rewardCost = pr.Reward__r.Cost__c;
+        List<Rewards_Event__c> lstAwards      = new List<Rewards_Event__c>();
+        List<Rewards_Event__c> lstRedemptions = new List<Rewards_Event__c>();
+        // Awards
+        for (Integer i = 0; i < numAwards; i++) {
+            lstAwards.add(
+                new Rewards_Event__c(
+                    Rewards_Account__c = ra.Id, 
+                    Points__c          = 200, 
+                    RecordTypeId       = awardRecTypeId,
+                    Description__c     = 'Test Points',
+                    // stagger dates in 5 day increments
+                    Date__c            = Date.today().addDays(-(i*5))
+                )
+            );
+        }
+        insert lstAwards;
+        // Redemptions
+        for (Integer i = 0; i < numRedemptions; i++) {
+            lstRedemptions.add(
+                new Rewards_Event__c(
+                    Rewards_Account__c = ra.Id,
+                    Reward__c          = rewardId,
+                    Points__c          = rewardCost, 
+                    RecordTypeId       = redemptionRecTypeId,
+                    Description__c     = 'Test Redemption',
+                    // stagger dates in 5 day increments
+                    Date__c            = Date.today().addDays(-(i))
+                )
+            );
+        }
+        insert lstRedemptions;
+
+        return [SELECT Id, Rewards_Program__c, Points_Total__c, 
+                       Status__c, Contact__c, End_Datetime__c,
+                       (SELECT Id, Rewards_Account__c, Reward__c, Points__c, RecordTypeId, 
+                               Description__c, Expired__c, Expiration_Date__c, Points_Used__c,
+                               Points_Expired__c, Points_Remaining__c, Type__c
+                          FROM Rewards_Events__r
+                         ORDER BY Date__c ASC) 
+                  FROM Rewards_Account__c
+                 WHERE Id = :ra.Id
+                 LIMIT 1];
+    }
+
     public static Id getRecordTypeId(String obj, String developerName) {
         return [SELECT Id FROM RecordType WHERE SobjectType = :obj AND DeveloperName = :developerName LIMIT 1].Id;
     }
