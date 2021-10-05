@@ -25,6 +25,22 @@ public with sharing class RewardsEventHandler {
         return redemptionRecordTypeId;
     }
 
+    public static Id getAwardRecordTypeId() {
+        if (recordTypeIdsAreSet) {
+            return awardRecordTypeId;
+        }
+        setRecordTypeIds();
+        return awardRecordTypeId;
+    }
+
+    public static Id getExpirationRecordTypeId() {
+        if (recordTypeIdsAreSet) {
+            return expirationRecordTypeId;
+        }
+        setRecordTypeIds();
+        return expirationRecordTypeId;
+    }
+
     public static Map<Id, Rewards_Event__c> getMapRewardsEventsToUpdate() {
         if (mapRewardsEventsToUpdate == null) {
             mapRewardsEventsToUpdate = new Map<Id, Rewards_Event__c>();
@@ -237,10 +253,6 @@ public with sharing class RewardsEventHandler {
     ) {
         setRecordTypeIds();
 
-        if (pointsTotal == null) {
-            pointsTotal = mapRewardsAccounts.get(re.Rewards_Account__c).Points_Total__c != null
-                            ? mapRewardsAccounts.get(re.Rewards_Account__c).Points_Total__c : 0;
-        }
         Decimal oldBalance = re.Points_Balance__c != null ? re.Points_Balance__c : null;
 
         if (re.RecordTypeId == awardRecordTypeId) {
@@ -283,10 +295,10 @@ public with sharing class RewardsEventHandler {
     ) {
         Rewards_Account__c ra = mapRewardsAccounts.get(re.Rewards_Account__c);
         String programName = mapRewardsAccounts.get(re.Rewards_Account__c)?.Rewards_Program__r?.Name;
-        if (String.isEmpty(re.Rewards_Program_Name__c)) {
+        if (String.isBlank(re.Rewards_Program_Name__c)) {
             re.Rewards_Program_Name__c = ra.Rewards_Program__r.Name;
         }
-        if (String.isEmpty(re.Rewards_Program_ID__c)) {
+        if (String.isBlank(re.Rewards_Program_ID__c)) {
             re.Rewards_Program_ID__c = ra.Rewards_Program__c;
         }
         if (re.Date__c == null) {
@@ -302,10 +314,10 @@ public with sharing class RewardsEventHandler {
         Map<Id, Rewards_Account__c> mapRewardsAccounts
     ) {
         Rewards_Account__c ra = mapRewardsAccounts.get(re.Rewards_Account__c);
-        if (String.isEmpty(re.Description__c)) {
+        if (String.isBlank(re.Description__c)) {
             re.Description__c = ra.Rewards_Program__r.Name + ' Points';
         }
-        if (String.isEmpty(re.Status__c)) {
+        if (String.isBlank(re.Status__c)) {
             re.Status__c = ra.Status__c == 'Active' || ra.Status__c == 'Pending' ? 'Active' : 'Inactive';
         }
         if (

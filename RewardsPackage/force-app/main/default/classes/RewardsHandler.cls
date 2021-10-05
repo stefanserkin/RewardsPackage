@@ -6,7 +6,7 @@ public with sharing class RewardsHandler {
         if (mapRewards != null) {
             return mapRewards;
         }
-        mapRewards = queryForMap(setRewardIds);
+        mapRewards = queryForMap();
         return mapRewards;
     }
 
@@ -14,23 +14,15 @@ public with sharing class RewardsHandler {
         if (mapRewards != null) {
             return mapRewards;
         }
-        RewardsEventHandler.setRecordTypeIds();
-        Set<Id> setRewardIds = new Set<Id>();
-        for (Rewards_Event__c re : lstRedemptionEvents) {
-            if (re.RecordTypeId == RewardsEventHandler.getRedemptionRecordTypeId() 
-                    && re.Reward__c != null) {
-                setRewardIds.add(re.Reward__c);
-            }
-        }
-        mapRewards = queryForMap(setRewardIds);
+        mapRewards = queryForMap();
         return mapRewards;
     }
 
-    private static Map<Id, Reward__c> queryForMap(Set<Id> setRewardIds) {
+    private static Map<Id, Reward__c> queryForMap() {
         Map<Id, Reward__c> mapRewards = new Map<Id, Reward__c>([
             SELECT Id, Name, Cost__c 
               FROM Reward__c 
-             WHERE Id IN :setRewardIds
+             LIMIT 10000
         ]);
         return mapRewards;
     }
