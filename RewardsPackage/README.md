@@ -1,14 +1,14 @@
 # Rewards
 
-Rewards Package 2.0
+Rewards Package 1.1
 
 ## How to Install Rewards
 
-AppExchange: 
+AppExchange: https://login.salesforce.com/packaging/installPackage.apexp?p0=04t5f000000QU3m
 
 ## Demo
 
-Loom: 
+Loom:
 
 ## Read All About It
 
