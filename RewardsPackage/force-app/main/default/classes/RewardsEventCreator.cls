@@ -28,22 +28,22 @@ global without sharing class RewardsEventCreator {
 
     public class Request {
 
-        @InvocableVariable(required=true)
+        @InvocableVariable(label='Rewards Program ID' required=true)
         public String rewardsProgramId;
 
-        @InvocableVariable(required=true)
+        @InvocableVariable(label='Contact ID' required=true)
         public String contactId;
 
-        @InvocableVariable(required=true)
+        @InvocableVariable(label='Points Awarded' required=true)
         public Decimal points;
 
-        @InvocableVariable(required=true)
+        @InvocableVariable(label='Description' required=true)
         public String description;
 
-        @InvocableVariable
+        @InvocableVariable(label='Related Entity Id' description='Optionally include the Record ID of the record that initiated this event')
         public String relatedEntityId;
 
-        @InvocableVariable
+        @InvocableVariable(label='Days Until Expiration' description='Optional. Points will expire after this amount of days, unless the Rewards Program policies expire them sooner')
         public Decimal daysUntilExpiration;
 
     }
