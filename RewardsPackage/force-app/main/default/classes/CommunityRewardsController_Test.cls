@@ -171,4 +171,12 @@ public class CommunityRewardsController_Test {
         System.assertEquals(105, raToVerify.Points_Total__c, 'Unexpected points total for rewards account');
     }
 
+    @isTest 
+    static void testGetRewardsProgram() {
+        List<Program_Reward__c> lstPRs  = RewardsTestDataFactory.createPerpetualProgramWithRewards(1);
+        Id rewardsProgramId = lstPRs.get(0).Rewards_Program__c;
+        Rewards_Program__c rp = CommunityRewardsController.getRewardsProgram(rewardsProgramId);
+        System.assert(rp != null, 'Unexpected points total for rewards account');
+    }
+
 }

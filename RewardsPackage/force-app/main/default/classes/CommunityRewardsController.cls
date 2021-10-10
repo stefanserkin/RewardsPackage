@@ -81,6 +81,14 @@ public with sharing class CommunityRewardsController {
         ];
     }
 
+    @AuraEnabled(cacheable=true)
+    public static Rewards_Program__c getRewardsProgram(Id rewardsProgramId) {
+        return [SELECT Id, Name, Activate_Account_Details__c 
+                  FROM Rewards_Program__c
+                 WHERE Id = :rewardsProgramId
+                  WITH SECURITY_ENFORCED
+                 LIMIT 1
+        ];
+    }
 
-    
 }

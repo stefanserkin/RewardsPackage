@@ -329,4 +329,26 @@ public with sharing class RewardsAccountHandler_Test {
         System.assertEquals(rp.Status__c, raToVerify.Status__c, 'Rewards Account status was unexpected');
     }
 
+    @isTest
+    static void testBypassTrigger() {
+        Contact ct = [SELECT Id, FirstName FROM Contact LIMIT 1];
+        Rewards_Program__c rp = [SELECT Id, Name FROM Rewards_Program__c WHERE Name LIKE '%Evergreen%' LIMIT 1];
+
+        Rewards_Account__c ra = new Rewards_Account__c();
+        ra.Contact__c = ct.Id;
+        ra.Rewards_Program__c = rp.Id;
+        ra.Status__c = 'Active';
+        ra.Name = 'Test Account';
+
+        RewardsCommonUtilities.setTestObjectFound();
+        RewardsCommonUtilities.setTestActive();
+        RewardsCommonUtilities.setTestBypassAll();
+
+        Test.startTest();
+        Database.SaveResult sr = Database.insert(ra, false);
+        Test.stopTest();
+
+        System.assert(sr.isSuccess(), 'Insert of rewards account was unsuccessful');
+    }
+
 }

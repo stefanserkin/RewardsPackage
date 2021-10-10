@@ -464,5 +464,32 @@ public with sharing class RewardsEventHandler_Test {
                                                  LIMIT 1];
         System.assertEquals(redemptionRefreshed.Reward__r.Cost__c, redemptionRefreshed.Points__c, 'Received unexpected points');
     }
+
+    @isTest
+    static void testBypassTrigger() {
+        List<Program_Reward__c> lstPRs  = RewardsTestDataFactory.createPerpetualProgramWithRewards(1);
+        List<Contact> lstContacts       = RewardsTestDataFactory.createContacts(1, 1);
+        List<Rewards_Account__c> lstRAs = RewardsTestDataFactory.createRewardsAccounts(lstContacts, lstPRs[0].Rewards_Program__c);
+
+        Id awardRecTypeId = RewardsTestDataFactory.getRecordTypeId('Rewards_Event__c', 'Award');
+
+        Rewards_Event__c re = new Rewards_Event__c(
+            Rewards_Account__c = lstRAs.get(0).Id, 
+            Points__c          = 100, 
+            RecordTypeId       = awardRecTypeId,
+            Description__c     = 'Test Points'
+        );
+
+        RewardsCommonUtilities.setTestObjectFound();
+        RewardsCommonUtilities.setTestActive();
+        RewardsCommonUtilities.setTestBypassAll();
+
+        Test.startTest();
+        Database.SaveResult sr = Database.insert(re, false);
+        Test.stopTest();
+
+        System.assert(sr.isSuccess(), 'Failed to insert rewards event');
+    }
+
     
 }
