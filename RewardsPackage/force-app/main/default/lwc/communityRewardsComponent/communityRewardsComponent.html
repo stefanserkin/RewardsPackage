@@ -2,16 +2,7 @@
 <template>
     <!-- SPINNER ON LOAD -->
     <lightning-spinner if:true={isLoading} alternative-text="Loading" variant="brand" size="large"></lightning-spinner>
-    <!-- ACTIVATE ACCOUNT -->
-    <template if:false={isLoading}>
-        <lightning-card if:false={accountIsActive}>
-            <h1 slot="title"><span style={themeStyle}>YOU'VE EARNED IT!</span></h1>
-            <p class="slds-m-around_medium">You’re dedicated to staying fit at the JCCSF. With JCCSF Perks, your hard work and loyalty pay off in exclusive rewards, like personal training, spa packages, Pilates sessions or parking, to name just a few.</p>
-            <p class="slds-m-around_medium">You earn 250 points just by joining the JCCSF Perks program and you keep accruing them by coming to the gym and checking in with your Membership ID card. The more you use the JCCSF Fitness Center and programs, the more points you accumulate.</p>
-            <p class="slds-m-around_medium">It’s free, quick and easy to sign up. Every check-in earns you points.</p>
-            <lightning-button variant="brand-outline" label="GET STARTED RIGHT NOW!" title="Activate Account" onclick={activateAccount} class="slds-m-left_x-small activate-button"></lightning-button>
-        </lightning-card>
-    </template>
+
     <!-- ACTIVE IS ACTIVE -->
     <lightning-card if:true={accountIsActive}>
         <h1 slot="title"><span style={themeStyle}>{componentTitle}</span></h1>

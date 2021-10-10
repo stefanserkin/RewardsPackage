@@ -1,0 +1,29 @@
+<template>
+    <template if:false={accountIsActive}>
+        <template if:false={isLoading}>
+            <!-- ACTIVATE ACCOUNT -->
+            <lightning-card>
+                <h1 slot="title"><span style={themeStyle}>{componentTitle}</span></h1>
+                <div class="slds-var-m-around_medium">
+                    <lightning-formatted-rich-text
+                        value={activationDetails}
+                    ></lightning-formatted-rich-text>
+                </div>
+                <lightning-button variant="brand-outline" label={activationButtonLabel} title="Activate Account" onclick={activateAccount} class="slds-var-m-left_x-small activate-button"></lightning-button>
+            </lightning-card>
+        </template>
+    </template>
+    
+    <template if:true={accountIsActive}>
+        <!-- DISPLAY REWARDS COMPONENT -->
+        <c-community-rewards-component
+            component-title={componentTitle}
+            include-link-to-more-info={includeLinkToMoreInfo}
+            more-info-u-r-l={moreInfoURL}
+            more-info-u-r-l-text={moreInfoURLText}
+            rewards-program-id={rewardsProgramId}
+            theme-color={themeColor}
+        ></c-community-rewards-component>
+    </template>
+    
+</template>

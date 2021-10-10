@@ -1,4 +1,4 @@
-import { LightningElement, wire, api, track } from 'lwc';
+import { LightningElement, wire, api } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
 import { refreshApex } from '@salesforce/apex';
 import { getRecord } from 'lightning/uiRecordApi';
@@ -12,10 +12,6 @@ import getIneligibleRewards from '@salesforce/apex/CommunityRewardsController.ge
 import USER_ID from '@salesforce/user/Id';
 import NAME_FIELD from '@salesforce/schema/User.FirstName';
 import CONTACTID_FIELD from '@salesforce/schema/User.ContactId';
-import REWARDACCOUNT_OBJECT from '@salesforce/schema/Rewards_Account__c';
-import REWARDSPROGRAM_FIELD from '@salesforce/schema/Rewards_Account__c.Rewards_Program__c';
-import CONTACT_FIELD from '@salesforce/schema/Rewards_Account__c.Contact__c';
-import POINTSTOTAL_FIELD from '@salesforce/schema/Rewards_Account__c.Points_Total__c';
 import REWARDSEVENT_OBJECT from '@salesforce/schema/Rewards_Event__c';
 import REDEMPTION_RECORDTYPEID_FIELD from '@salesforce/schema/Rewards_Event__c.RecordTypeId';
 import POINTS_FIELD from '@salesforce/schema/Rewards_Event__c.Points__c';
@@ -378,48 +374,6 @@ export default class CommunityRewardsComponent extends LightningElement {
     handleBackToTable() {
         this.showPointsDetail = false;
         this.showPointsTable = true;
-    }
-
-    rewardsAccountId;
-
-    activateAccount() {
-        this.isLoading = true;
-        this.activeTab = '1';
-
-        const fields = {};
-        fields[REWARDSPROGRAM_FIELD.fieldApiName] = this.rewardsProgramId;
-        fields[CONTACT_FIELD.fieldApiName] = this.contactId;
-        fields[POINTSTOTAL_FIELD.fieldApiName] = 0;
-        const recordInput = { apiName: REWARDACCOUNT_OBJECT.objectApiName, fields };
-        createRecord(recordInput)
-            .then((rewardsAccount) => {
-                this.rewardsAccountId = rewardsAccount.id;
-                this.dispatchEvent(
-                    new ShowToastEvent({
-                        title: 'Success',
-                        message: 'Account Activated. Great job. Super',
-                        variant: 'success'
-                    })
-                );
-                refreshApex(this.wiredRewardsAccount);
-                refreshApex(this.wiredRewardsEventList);
-                refreshApex(this.wiredRewardsResult);
-                refreshApex(this.wiredIneligibleRewardsResult);
-                this.accountIsActive = true;
-                this.activeTab = '1';
-                this.isLoading = false;
-            })
-            .catch((error) => {
-                this.error = error;
-                this.dispatchEvent(
-                    new ShowToastEvent({
-                        title: 'Error creating record',
-                        message: 'Shoot - failed to activate account',
-                        variant: 'error'
-                    })
-                );
-                this.isLoading = false;
-            });
     }
 
 }
